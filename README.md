@@ -107,7 +107,8 @@ a real HTTP client touches one file. Full details in
   uploaded (mocked) *before* the complete action, once per action.
 - **Single driver, no auth.** The task focuses on delivery + sync behavior.
 - Phone/address actions use `tel:` and Google Maps deep links.
-- Amounts are KWD with three decimals, matching the sample data.
+- Amounts are EGP with two decimals; the mock dataset uses Egyptian names,
+  addresses and mobile numbers (Cairo, Giza, Alexandria).
 
 ## Project structure
 

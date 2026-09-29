@@ -1,10 +1,11 @@
 import { failureReasonLabel, formatMoney, timeAgo } from '../src/utils/format';
 
 describe('formatMoney', () => {
-  it('renders KWD with three decimals', () => {
-    expect(formatMoney(18.75)).toBe('18.750 KWD');
-    expect(formatMoney(0)).toBe('0.000 KWD');
-    expect(formatMoney(42)).toBe('42.000 KWD');
+  it('renders EGP with two decimals', () => {
+    expect(formatMoney(1250)).toBe('1250.00 EGP');
+    expect(formatMoney(0)).toBe('0.00 EGP');
+    expect(formatMoney(890.25)).toBe('890.25 EGP');
+    expect(formatMoney(2799.99)).toBe('2799.99 EGP');
   });
 });
 

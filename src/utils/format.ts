@@ -10,9 +10,9 @@ export const FAILURE_REASONS: FailureReason[] = [
   'other',
 ];
 
-/** Amounts are KWD, which uses three decimal places. */
+/** Amounts are EGP (Egyptian pounds), which uses two decimal places. */
 export function formatMoney(amount: number): string {
-  return `${amount.toFixed(3)} KWD`;
+  return `${amount.toFixed(2)} EGP`;
 }
 
 export function timeAgo(

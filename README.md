@@ -27,6 +27,20 @@ connectivity. Built as a solution to the *Mobile Technical Task — Delivery Tra
 | Delivery changed on server before submit (conflict) | 409 handling + resolution dialog (discard / keep for review) |
 | Mocked API with all required behaviors | `src/api/mockServer.ts` + in-app **Network Simulator** |
 
+## Screenshots
+
+| | |
+|---|---|
+| ![My Deliveries](docs/screenshots/01-deliveries-list.png) | ![Delivery details](docs/screenshots/02-delivery-details.png) |
+| ![Mark as Delivered](docs/screenshots/03-complete-delivery.png) | ![Report failed](docs/screenshots/04-fail-delivery.png) |
+| ![Network simulator](docs/screenshots/05-network-simulator.png) | ![Offline mode](docs/screenshots/06-offline-list.png) |
+| ![Sync Queue](docs/screenshots/07-sync-queue.png) | ![Dark mode](docs/screenshots/08-dark-mode-list.png) |
+
+Arabic RTL: ![Arabic](docs/screenshots/09-arabic-rtl.png)
+
+The full client guide with these screenshots is in
+[docs/DriverTrack-Client-Guide.pdf](docs/DriverTrack-Client-Guide.pdf).
+
 **Beyond the task brief:** the app also ships **dark mode** (light / dark / follow-system,
 persisted), full **Arabic localization with RTL mirroring** (switch languages from the
 settings screen), and a branded **native splash screen** on Android and iOS.

@@ -1,9 +1,11 @@
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Button } from '../components/Button';
+import { ConflictDialog } from '../components/ConflictDialog';
 import { DeliveryStatusChip, PaymentChip, SyncStatusChip } from '../components/StatusChips';
 import { computeSyncInfo, useAppStore } from '../store/useAppStore';
 import { theme } from '../theme';
@@ -20,6 +22,7 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
   const retryAction = useAppStore(s => s.retryAction);
   const discardAction = useAppStore(s => s.discardAction);
   const insets = useSafeAreaInsets();
+  const [conflictOpen, setConflictOpen] = useState(false);
 
   if (!delivery) {
     return (
@@ -46,19 +49,7 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
   };
 
   const resolveConflict = () => {
-    Alert.alert(
-      'Delivery changed on server',
-      `${delivery.order_number} was modified before your update arrived.\n\nServer now says: ${action?.server_delivery?.status ?? 'modified'}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Discard my update',
-          style: 'destructive',
-          onPress: () => void discardAction(delivery.id),
-        },
-        { text: 'Keep for dispatch review' },
-      ],
-    );
+    setConflictOpen(true);
   };
 
   return (
@@ -220,6 +211,17 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
             />
           </View>
         </View>
+      ) : null}
+
+      {action?.status === 'conflict' && conflictOpen ? (
+        <ConflictDialog
+          action={action}
+          onDiscard={() => {
+            setConflictOpen(false);
+            void discardAction(delivery.id);
+          }}
+          onKeep={() => setConflictOpen(false)}
+        />
       ) : null}
     </View>
   );

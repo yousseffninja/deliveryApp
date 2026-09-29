@@ -1,97 +1,121 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# DriverTrack — Delivery Tracking App
 
-# Getting Started
+An offline-first mobile app for delivery drivers: view assigned deliveries, mark them
+**Delivered** or **Failed**, and keep working reliably through slow or missing
+connectivity. Built as a solution to the *Mobile Technical Task — Delivery Tracking App*.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+> **Stack:** React Native 0.87 (bare CLI) + TypeScript + React Navigation + Zustand +
+> AsyncStorage. No backend required — a fully mocked in-app API simulates realistic
+> network behavior (see [Network Simulator](#demo-script--network-simulator)).
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Features
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+| Task requirement | Where |
+| --- | --- |
+| List of assigned deliveries (loading / error / empty / retry, pull-to-refresh, filters) | `src/screens/DeliveriesListScreen.tsx` |
+| Delivery details (customer, address, amount, payment, notes, call & maps deep links) | `src/screens/DeliveryDetailsScreen.tsx` |
+| Mark as **Delivered** — recipient name required, optional note + photo proof | `src/screens/CompleteDeliveryScreen.tsx` |
+| Mark as **Failed** — reason required, optional note | `src/screens/FailDeliveryScreen.tsx` |
+| Pending actions stored locally while offline | `src/storage/outboxRepo.ts` (outbox pattern) |
+| Pending actions survive app restarts | AsyncStorage-persisted outbox, hydrated on boot |
+| Clear **Synced / Waiting / Failed** status on every update | sync chips on cards, details, and the Sync Queue tab |
+| Auto-sync when connectivity returns | connectivity listener + 20s auto-retry tick with backoff |
+| No duplicate submissions | one action per delivery + stable `client_action_id` idempotency key |
+| Manual retry of failed syncs | Retry buttons on Sync Queue + details, "Retry all failed" |
+| Delivery changed on server before submit (conflict) | 409 handling + resolution dialog (discard / keep for review) |
+| Mocked API with all required behaviors | `src/api/mockServer.ts` + in-app **Network Simulator** |
 
-```sh
-# Using npm
-npm start
+## Getting started
 
-# OR using Yarn
-yarn start
-```
+```bash
+npm install
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+# Android
 npm run android
 
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
+# iOS (first run needs pods)
 bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
 bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Tests and typecheck:
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```bash
+npm test          # 24 unit tests (mock API, outbox persistence, sync engine)
+npx tsc --noEmit  # strict typecheck
+```
 
-## Step 3: Modify your app
+## Demo script & Network Simulator
 
-Now that you have successfully run the app, let's make changes!
+The app ships with a **Network Simulator** (gear icon on any screen header) that
+drives the mocked backend. Every behavior the task asks the mock API to simulate is
+reproducible from the UI:
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+1. **Normal flow** — open a pending delivery → *Mark as Delivered* → confirm. The
+   card immediately shows **Syncing…** then **Synced**.
+2. **Offline queueing** — Simulator → *Airplane mode* → complete a delivery. It is
+   saved locally and shows **Waiting to sync** with an offline banner on the list.
+3. **Persistence across restarts** — still offline, kill and reopen the app. The
+   queued update is still there (simulator settings persist too).
+4. **Auto-sync on reconnect** — switch back to *Online*. The queue drains by
+   itself and the update flips to **Synced**.
+5. **Failed requests + successful retry** — *Flaky server* (~45% injected 500s):
+   watch attempts climb on the Sync Queue, then succeed. After 3 failed attempts an
+   action parks as **Failed to sync** and offers manual retry.
+6. **Slow responses / timeouts** — *Slow 3G* has 4–8s latency plus stalls that
+   force the client timeout (retryable).
+7. **Duplicate protection** — the server registry replays the original result for a
+   repeated `client_action_id` (covered by unit tests; the UI additionally blocks a
+   second action for the same delivery).
+8. **Server-side conflict** — pick a delivery → *Arm conflict*, then submit. The
+   server changes the order right before your update lands and returns **409** with
+   its state; the app shows the *Delivery changed on server* dialog → **Discard my
+   update** or **Keep for dispatch review**.
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## Architecture in one paragraph
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+`UI (screens)` talks only to a Zustand store. The store owns the in-memory state,
+persists through thin repositories (AsyncStorage), and delegates all network work to
+a `SyncEngine`. Driver actions are recorded as `PendingAction`s in a durable
+**outbox** (one per delivery, each with a stable `client_action_id`) and applied
+optimistically to the local cache; the engine drains the outbox FIFO when online,
+with exponential backoff for retryable failures, parking as `failed` after 3
+attempts, and parking `409` responses as `conflict` for the user to resolve. The
+API is an interface (`src/api/types.ts`) with a mock implementation whose latency,
+failure rate, stalls and offline mode are controlled by the simulator — swapping in
+a real HTTP client touches one file. Full details in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Congratulations! :tada:
+## Assumptions
 
-You've successfully run and modified your React Native App. :partying_face:
+- **Conflict definition:** a submit conflicts when the delivery is no longer
+  `pending` server-side (already delivered/failed/cancelled by someone else).
+  The server response carries the authoritative state for the resolution dialog.
+- **"Keep for dispatch review"** leaves the conflicting action in the queue,
+  excluded from all automatic sync; the user or dispatch later discards or retries it.
+- **Failed syncs need manual retry** by design; `waiting` actions retry
+  automatically (backoff 5s→60s, 3 attempts). This keeps "failed" a state the
+  driver actively sees and acts on, per the task.
+- **Photo proof** is picked from the gallery/camera, stored as a local file URI and
+  uploaded (mocked) *before* the complete action, once per action.
+- **Single driver, no auth.** The task focuses on delivery + sync behavior.
+- Phone/address actions use `tel:` and Google Maps deep links.
+- Amounts are KWD with three decimals, matching the sample data.
 
-### Now what?
+## Project structure
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+```
+src/
+  api/        mock server, network profiles, transport-agnostic Api interface, errors
+  storage/    KeyValue port + deliveries cache, outbox, synced log, simulator repos
+  sync/       connectivity (NetInfo wrapper) + SyncEngine (outbox drain, backoff, conflicts)
+  store/      Zustand store: bootstrap, refresh merge, submit/retry/discard, selectors
+  screens/    list, details, complete, fail, sync queue, network simulator
+  components/ cards, chips, banner, dialogs, state views, buttons
+  navigation/ bottom tabs (Route / Sync Queue) + native stack
+  theme/      design tokens
+tests/        Jest unit tests for the mock API, repos and sync engine
+```

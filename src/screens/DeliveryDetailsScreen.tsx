@@ -180,7 +180,7 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
           iconColor={colors.primary}
         >
           <Text style={styles.bodyText}>{delivery.customer_name}</Text>
-          <Text style={styles.muted}>+965 {delivery.phone}</Text>
+          <Text style={styles.muted}>{delivery.phone}</Text>
           <View style={styles.buttonRow}>
             <View style={styles.halfButton}>
               <Button

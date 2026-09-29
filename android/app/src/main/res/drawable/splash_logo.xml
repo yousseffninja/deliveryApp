@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- White disc + brand-blue navigation mark, used by the launch theme. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,6 A42,42 0 1,0 48,90 A42,42 0 1,0 48,6 Z" />
+    <group
+        android:translateX="36"
+        android:translateY="36">
+        <path
+            android:fillColor="#1D5DF2"
+            android:pathData="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" />
+    </group>
+</vector>

@@ -1,10 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ system splash screen customization. -->
 <resources>
-
-    <!-- Base application theme. Shows the brand splash while the app loads. -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
         <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_blue</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
     </style>
-
 </resources>

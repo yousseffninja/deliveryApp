@@ -1,43 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Button } from './Button';
-import { theme } from '../theme';
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: theme.spacing.xl,
-  },
-  iconCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
-  },
-  message: {
-    fontSize: 14,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: theme.spacing.xl,
-  },
-  hint: {
-    fontSize: 12,
-    color: theme.colors.textMuted,
-    marginTop: theme.spacing.md,
-    textAlign: 'center',
-  },
-});
+import { ThemeColors, spacing, radius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface StateViewProps {
   icon: string;
@@ -60,6 +25,8 @@ export function StateView({
   onAction,
   hint,
 }: StateViewProps) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={styles.container}>
       <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
@@ -76,9 +43,48 @@ export function StateView({
 }
 
 export function LoadingView({ label = 'Loading deliveries…' }: { label?: string }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{label}</Text>
     </View>
   );
 }
+
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      paddingVertical: 48,
+      paddingHorizontal: spacing.xl,
+    },
+    iconCircle: {
+      width: 84,
+      height: 84,
+      borderRadius: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.lg,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: spacing.sm,
+      textAlign: 'center',
+    },
+    message: {
+      fontSize: 14,
+      color: c.textMuted,
+      textAlign: 'center',
+      lineHeight: 20,
+      marginBottom: spacing.xl,
+    },
+    hint: {
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: spacing.md,
+      textAlign: 'center',
+    },
+  });

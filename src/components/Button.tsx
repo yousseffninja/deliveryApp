@@ -5,7 +5,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { theme } from '../theme';
+import { ThemeColors, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface ButtonProps {
   label: string;
@@ -13,14 +14,7 @@ interface ButtonProps {
   variant?: 'primary' | 'danger' | 'secondary';
   disabled?: boolean;
   loading?: boolean;
-  icon?: string;
 }
-
-const VARIANTS = {
-  primary: { bg: theme.colors.primary, fg: '#FFFFFF' },
-  danger: { bg: theme.colors.danger, fg: '#FFFFFF' },
-  secondary: { bg: theme.colors.primarySoft, fg: theme.colors.primary },
-} as const;
 
 export function Button({
   label,
@@ -28,9 +22,14 @@ export function Button({
   variant = 'primary',
   disabled,
   loading,
-  icon,
 }: ButtonProps) {
-  const colors = VARIANTS[variant];
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+  const colorsByVariant = {
+    primary: { bg: colors.primary, fg: colors.white },
+    danger: { bg: colors.danger, fg: colors.white },
+    secondary: { bg: colors.primarySoft, fg: colors.primary },
+  }[variant];
   const isDisabled = disabled === true || loading === true;
   return (
     <Pressable
@@ -39,28 +38,34 @@ export function Button({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: colors.bg, opacity: isDisabled ? 0.55 : pressed ? 0.85 : 1 },
+        {
+          backgroundColor: colorsByVariant.bg,
+          opacity: isDisabled ? 0.55 : pressed ? 0.85 : 1,
+        },
       ]}
     >
-      {loading ? <ActivityIndicator size="small" color={colors.fg} /> : null}
-      <Text style={[styles.label, { color: colors.fg }]}>{label}</Text>
+      {loading ? (
+        <ActivityIndicator size="small" color={colorsByVariant.fg} />
+      ) : null}
+      <Text style={[styles.label, { color: colorsByVariant.fg }]}>{label}</Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: theme.radius.md,
-    paddingVertical: 14,
-    paddingHorizontal: theme.spacing.lg,
-    marginVertical: theme.spacing.xs,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    base: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: spacing.lg,
+      marginVertical: spacing.xs,
+    },
+    label: {
+      fontSize: 15,
+      fontWeight: '700',
+    },
+  });

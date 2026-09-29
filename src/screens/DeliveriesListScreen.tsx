@@ -7,7 +7,8 @@ import { HeaderIconButton, ScreenHeader } from '../components/ScreenHeader';
 import { LoadingView, StateView } from '../components/StateViews';
 import { SyncBanner } from '../components/SyncBanner';
 import { computeQueueCounts, computeSyncInfo, useAppStore } from '../store/useAppStore';
-import { theme } from '../theme';
+import { ThemeColors, spacing, radius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { DeliveryStatusFilter, RouteStackParamList } from '../navigation/types';
 import { Delivery } from '../types';
 
@@ -28,6 +29,8 @@ const STATUS_ORDER: Record<string, number> = {
 };
 
 export function DeliveriesListScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const deliveries = useAppStore(s => s.deliveries);
   const outbox = useAppStore(s => s.outbox);
   const syncedLog = useAppStore(s => s.syncedLog);
@@ -111,8 +114,8 @@ export function DeliveriesListScreen({ navigation }: Props) {
         />
         <StateView
           icon="cloud-offline-outline"
-          iconBg={theme.colors.dangerBg}
-          iconColor={theme.colors.danger}
+          iconBg={colors.dangerBg}
+          iconColor={colors.danger}
           title="Can't load deliveries"
           message={
             loadError ??
@@ -134,7 +137,7 @@ export function DeliveriesListScreen({ navigation }: Props) {
         right={
           <HeaderIconButton
             name="settings-outline"
-            color={online ? theme.colors.text : theme.colors.warning}
+            color={online ? colors.text : colors.warning}
             onPress={() => navigation.navigate('NetworkSimulator')}
           />
         }
@@ -157,8 +160,8 @@ export function DeliveriesListScreen({ navigation }: Props) {
         keyExtractor={item => String(item.id)}
         renderItem={renderItem}
         contentContainerStyle={{
-          paddingBottom: insets.bottom + theme.spacing.xl,
-          paddingTop: theme.spacing.sm,
+          paddingBottom: insets.bottom + spacing.xl,
+          paddingTop: spacing.sm,
         }}
         ListHeaderComponent={
           <View style={styles.listHeader}>
@@ -166,17 +169,17 @@ export function DeliveriesListScreen({ navigation }: Props) {
               <StatCard
                 label="Pending"
                 value={counts.pending}
-                color={theme.colors.primary}
+                color={colors.primary}
               />
               <StatCard
                 label="Delivered"
                 value={counts.delivered}
-                color={theme.colors.success}
+                color={colors.success}
               />
               <StatCard
                 label="Failed"
                 value={counts.failed}
-                color={theme.colors.danger}
+                color={colors.danger}
               />
             </View>
             <View style={styles.filtersRow}>
@@ -198,8 +201,8 @@ export function DeliveriesListScreen({ navigation }: Props) {
         ListEmptyComponent={
           <StateView
             icon="cube-outline"
-            iconBg={theme.colors.primarySoft}
-            iconColor={theme.colors.primary}
+            iconBg={colors.primarySoft}
+            iconColor={colors.primary}
             title="No deliveries here"
             message={
               filter === 'all'
@@ -214,8 +217,8 @@ export function DeliveriesListScreen({ navigation }: Props) {
           <RefreshControl
             refreshing={loading && hasData}
             onRefresh={() => void refresh()}
-            tintColor={theme.colors.primary}
-            colors={[theme.colors.primary]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       />
@@ -232,6 +235,8 @@ function StatCard({
   value: number;
   color: string;
 }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={styles.statCard}>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -240,64 +245,65 @@ function StatCard({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: theme.colors.bg,
-  },
-  listHeader: {
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    gap: theme.spacing.md,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  },
-  filtersRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  filterChip: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: theme.colors.textMuted,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    overflow: 'hidden',
-  },
-  filterChipActive: {
-    color: '#FFFFFF',
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  cachedNote: {
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.sm,
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.colors.warning,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    listHeader: {
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.md,
+      gap: spacing.md,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: c.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+    },
+    statValue: {
+      fontSize: 20,
+      fontWeight: '800',
+    },
+    statLabel: {
+      fontSize: 11,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    filtersRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    filterChip: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: c.textMuted,
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      overflow: 'hidden',
+    },
+    filterChipActive: {
+      color: c.white,
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    cachedNote: {
+      marginHorizontal: spacing.lg,
+      marginBottom: spacing.sm,
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.warning,
+    },
+  });

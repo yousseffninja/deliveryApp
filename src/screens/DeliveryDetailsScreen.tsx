@@ -1,14 +1,26 @@
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import type { ReactNode } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Button } from '../components/Button';
 import { ConflictDialog } from '../components/ConflictDialog';
-import { DeliveryStatusChip, PaymentChip, SyncStatusChip } from '../components/StatusChips';
+import {
+  DeliveryStatusChip,
+  PaymentChip,
+  SyncStatusChip,
+} from '../components/StatusChips';
 import { computeSyncInfo, useAppStore } from '../store/useAppStore';
-import { theme } from '../theme';
+import { ThemeColors, spacing, radius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { RouteStackParamList } from '../navigation/types';
 import { formatMoney, failureReasonLabel, timeAgo } from '../utils/format';
 
@@ -24,10 +36,15 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [conflictOpen, setConflictOpen] = useState(false);
 
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   if (!delivery) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text style={styles.muted}>Delivery not found. Pull to refresh on the route screen.</Text>
+        <Text style={styles.muted}>
+          Delivery not found. Pull to refresh on the route screen.
+        </Text>
       </View>
     );
   }
@@ -43,7 +60,11 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
       'Your confirmation was never sent to the server. The delivery will go back to pending on this device.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => void discardAction(delivery.id) },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => void discardAction(delivery.id),
+        },
       ],
     );
   };
@@ -56,7 +77,7 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
     <View style={styles.screen}>
       <ScrollView
         contentContainerStyle={{
-          padding: theme.spacing.lg,
+          padding: spacing.lg,
           paddingBottom: insets.bottom + 120,
         }}
       >
@@ -84,9 +105,15 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
           <View style={[styles.card, styles.noticeCard]}>
             <View style={styles.noticeRow}>
               <Icon
-                name={action.status === 'failed' ? 'alert-circle' : 'time-outline'}
+                name={
+                  action.status === 'failed'
+                    ? 'alert-circle'
+                    : 'time-outline'
+                }
                 size={20}
-                color={action.status === 'failed' ? theme.colors.danger : theme.colors.warning}
+                color={
+                  action.status === 'failed' ? colors.danger : colors.warning
+                }
               />
               <View style={styles.noticeTextBlock}>
                 <Text style={styles.noticeTitle}>
@@ -97,19 +124,30 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
                       : 'Waiting to sync'}
                 </Text>
                 <Text style={styles.noticeBody}>
-                  {action.type === 'complete' ? 'Delivered' : 'Failed delivery'} report for{' '}
-                  {delivery.order_number} · {timeAgo(action.created_at)}
-                  {action.attempts > 0 ? ` · ${action.attempts} attempt${action.attempts === 1 ? '' : 's'}` : ''}
+                  {action.type === 'complete' ? 'Delivered' : 'Failed delivery'}{' '}
+                  report for {delivery.order_number} ·{' '}
+                  {timeAgo(action.created_at)}
+                  {action.attempts > 0
+                    ? ` · ${action.attempts} attempt${action.attempts === 1 ? '' : 's'}`
+                    : ''}
                   {action.last_error ? `\n${action.last_error}` : ''}
                 </Text>
               </View>
             </View>
             <View style={styles.buttonRow}>
               <View style={styles.halfButton}>
-                <Button label="Retry now" variant="secondary" onPress={() => void retryAction(delivery.id)} />
+                <Button
+                  label="Retry now"
+                  variant="secondary"
+                  onPress={() => void retryAction(delivery.id)}
+                />
               </View>
               <View style={styles.halfButton}>
-                <Button label="Discard" variant="secondary" onPress={confirmDiscard} />
+                <Button
+                  label="Discard"
+                  variant="secondary"
+                  onPress={confirmDiscard}
+                />
               </View>
             </View>
           </View>
@@ -119,15 +157,15 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
         {isConflict ? (
           <View style={[styles.card, styles.conflictCard]}>
             <View style={styles.noticeRow}>
-              <Icon name="warning" size={20} color="#7E22CE" />
+              <Icon name="warning" size={20} color={colors.conflict} />
               <View style={styles.noticeTextBlock}>
-                <Text style={[styles.noticeTitle, { color: '#7E22CE' }]}>
+                <Text style={[styles.noticeTitle, { color: colors.conflict }]}>
                   Delivery changed on server
                 </Text>
                 <Text style={styles.noticeBody}>
                   {delivery.order_number} was modified before your{' '}
-                  {action?.type === 'complete' ? 'delivered' : 'failed'} report arrived. Review
-                  and choose how to resolve it.
+                  {action?.type === 'complete' ? 'delivered' : 'failed'} report
+                  arrived. Review and choose how to resolve it.
                 </Text>
               </View>
             </View>
@@ -136,7 +174,12 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
         ) : null}
 
         {/* customer */}
-        <SectionCard icon="person-outline" title="Customer">
+        <SectionCard
+          icon="person-outline"
+          title="Customer"
+          styles={styles}
+          iconColor={colors.primary}
+        >
           <Text style={styles.bodyText}>{delivery.customer_name}</Text>
           <Text style={styles.muted}>+965 {delivery.phone}</Text>
           <View style={styles.buttonRow}>
@@ -162,25 +205,42 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
         </SectionCard>
 
         {/* address + notes */}
-        <SectionCard icon="location-outline" title="Delivery address">
+        <SectionCard
+          icon="location-outline"
+          title="Delivery address"
+          styles={styles}
+          iconColor={colors.primary}
+        >
           <Text style={styles.bodyText}>{delivery.address}</Text>
           {delivery.note ? (
-            <View style={styles.noteBox}>
-              <Text style={styles.noteLabel}>Customer note</Text>
+            <View style={[styles.noteBox, { backgroundColor: colors.warningBg }]}>
+              <Text
+                style={[styles.noteLabel, { color: colors.warning }]}
+              >
+                Customer note
+              </Text>
               <Text style={styles.noteText}>{delivery.note}</Text>
             </View>
           ) : null}
           {delivery.status === 'failed' && delivery.failure_reason ? (
-            <View style={[styles.noteBox, { backgroundColor: theme.colors.dangerBg }]}>
-              <Text style={[styles.noteLabel, { color: theme.colors.danger }]}>Failure reason</Text>
+            <View
+              style={[styles.noteBox, { backgroundColor: colors.dangerBg }]}
+            >
+              <Text style={[styles.noteLabel, { color: colors.danger }]}>
+                Failure reason
+              </Text>
               <Text style={styles.noteText}>
                 {failureReasonLabel(delivery.failure_reason)}
               </Text>
             </View>
           ) : null}
           {delivery.status === 'delivered' && delivery.recipient_name ? (
-            <View style={[styles.noteBox, { backgroundColor: theme.colors.successBg }]}>
-              <Text style={[styles.noteLabel, { color: theme.colors.success }]}>Delivered to</Text>
+            <View
+              style={[styles.noteBox, { backgroundColor: colors.successBg }]}
+            >
+              <Text style={[styles.noteLabel, { color: colors.success }]}>
+                Delivered to
+              </Text>
               <Text style={styles.noteText}>{delivery.recipient_name}</Text>
             </View>
           ) : null}
@@ -196,18 +256,26 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
 
       {/* primary actions */}
       {isPending ? (
-        <View style={[styles.actionBar, { paddingBottom: insets.bottom + 12 }]}>
+        <View
+          style={[styles.actionBar, { paddingBottom: insets.bottom + 12 }]}
+        >
           <View style={styles.halfButton}>
             <Button
               label="Report Failed Delivery"
               variant="danger"
-              onPress={() => navigation.navigate('FailDelivery', { deliveryId: delivery.id })}
+              onPress={() =>
+                navigation.navigate('FailDelivery', { deliveryId: delivery.id })
+              }
             />
           </View>
           <View style={styles.halfButton}>
             <Button
               label="Mark as Delivered"
-              onPress={() => navigation.navigate('CompleteDelivery', { deliveryId: delivery.id })}
+              onPress={() =>
+                navigation.navigate('CompleteDelivery', {
+                  deliveryId: delivery.id,
+                })
+              }
             />
           </View>
         </View>
@@ -231,15 +299,19 @@ function SectionCard({
   icon,
   title,
   children,
+  styles,
+  iconColor,
 }: {
   icon: string;
   title: string;
   children: ReactNode;
+  styles: styles_type;
+  iconColor: string;
 }) {
   return (
     <View style={styles.card}>
       <View style={styles.sectionHeader}>
-        <Icon name={icon} size={16} color={theme.colors.primary} />
+        <Icon name={icon} size={16} color={iconColor} />
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       {children}
@@ -247,149 +319,150 @@ function SectionCard({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: theme.colors.bg,
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.xl,
-  },
-  card: {
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-  },
-  noticeCard: {
-    borderColor: theme.colors.warningBg,
-    backgroundColor: '#FFFBEB',
-  },
-  conflictCard: {
-    borderColor: '#E9D5FF',
-    backgroundColor: '#FAF5FF',
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  orderNumber: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: theme.colors.primary,
-    letterSpacing: 0.4,
-  },
-  customerName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: theme.colors.text,
-    marginTop: 2,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: theme.spacing.md,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: theme.colors.border,
-    marginVertical: theme.spacing.md,
-  },
-  amount: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: theme.colors.text,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: theme.spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: theme.colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  bodyText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  muted: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  },
-  noteBox: {
-    backgroundColor: theme.colors.warningBg,
-    borderRadius: theme.radius.sm,
-    padding: theme.spacing.md,
-    marginTop: theme.spacing.md,
-  },
-  noteLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: theme.colors.warning,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 2,
-  },
-  noteText: {
-    fontSize: 13,
-    color: theme.colors.text,
-    lineHeight: 18,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.md,
-  },
-  halfButton: {
-    flex: 1,
-  },
-  noticeRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: theme.spacing.sm,
-  },
-  noticeTextBlock: {
-    flex: 1,
-  },
-  noticeTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: theme.colors.warning,
-  },
-  noticeBody: {
-    fontSize: 12,
-    color: theme.colors.textMuted,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  footerMeta: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-  },
-  actionBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    backgroundColor: 'rgba(243,245,250,0.97)',
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-});
+type styles_type = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    center: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xl,
+    },
+    card: {
+      backgroundColor: c.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    noticeCard: {
+      borderColor: c.warningBg,
+      backgroundColor: c.warningBg,
+    },
+    conflictCard: {
+      borderColor: c.conflictBg,
+      backgroundColor: c.conflictBg,
+    },
+    rowBetween: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    orderNumber: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: c.primary,
+      letterSpacing: 0.4,
+    },
+    customerName: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: c.text,
+      marginTop: 2,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: c.border,
+      marginVertical: spacing.md,
+    },
+    amount: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: c.text,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: spacing.sm,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: c.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+    },
+    bodyText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.text,
+    },
+    muted: {
+      fontSize: 13,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    noteBox: {
+      borderRadius: radius.sm,
+      padding: spacing.md,
+      marginTop: spacing.md,
+    },
+    noteLabel: {
+      fontSize: 10,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: 2,
+    },
+    noteText: {
+      fontSize: 13,
+      color: c.text,
+      lineHeight: 18,
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    halfButton: {
+      flex: 1,
+    },
+    noticeRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: spacing.sm,
+    },
+    noticeTextBlock: {
+      flex: 1,
+    },
+    noticeTitle: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: c.warning,
+    },
+    noticeBody: {
+      fontSize: 12,
+      color: c.textMuted,
+      lineHeight: 17,
+      marginTop: 2,
+    },
+    footerMeta: {
+      fontSize: 11,
+      color: c.textMuted,
+      textAlign: 'center',
+    },
+    actionBar: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      backgroundColor: c.actionBarBg,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+  });

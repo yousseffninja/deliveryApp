@@ -13,7 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Button } from '../components/Button';
 import { useAppStore } from '../store/useAppStore';
-import { theme } from '../theme';
+import { ThemeColors, spacing, radius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { RouteStackParamList } from '../navigation/types';
 import { FAILURE_REASON_LABELS } from '../utils/format';
 import { FailureReason } from '../types';
@@ -32,11 +33,14 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
 
   if (!delivery) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.screen, styles.center]}>
         <Text style={styles.muted}>Delivery not found.</Text>
       </View>
     );
@@ -72,7 +76,7 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
     <View style={styles.screen}>
       <ScrollView
         contentContainerStyle={{
-          padding: theme.spacing.lg,
+          padding: spacing.lg,
           paddingBottom: insets.bottom + 100,
         }}
       >
@@ -106,10 +110,13 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
                 <Icon
                   name={selected ? 'checkmark-circle' : 'ellipse-outline'}
                   size={20}
-                  color={selected ? theme.colors.danger : theme.colors.textMuted}
+                  color={selected ? colors.danger : colors.textMuted}
                 />
                 <Text
-                  style={[styles.reasonText, selected ? styles.reasonTextSelected : null]}
+                  style={[
+                    styles.reasonText,
+                    selected ? styles.reasonTextSelected : null,
+                  ]}
                 >
                   {label}
                 </Text>
@@ -119,7 +126,7 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
         </View>
         {error ? (
           <View style={styles.errorRow}>
-            <Icon name="alert-circle" size={14} color={theme.colors.danger} />
+            <Icon name="alert-circle" size={14} color={colors.danger} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -132,7 +139,7 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
           multiline
           maxLength={240}
           placeholder="Optional — e.g. called twice, no answer…"
-          placeholderTextColor={theme.colors.textMuted}
+          placeholderTextColor={colors.textMuted}
         />
       </ScrollView>
 
@@ -154,121 +161,121 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: theme.colors.bg,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: theme.colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  summaryCard: {
-    backgroundColor: theme.colors.dangerBg,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-  },
-  orderNumber: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: theme.colors.danger,
-    letterSpacing: 0.4,
-  },
-  customer: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: theme.colors.text,
-    marginTop: 2,
-  },
-  address: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: theme.colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 8,
-  },
-  required: {
-    color: theme.colors.danger,
-  },
-  reasons: {
-    gap: theme.spacing.sm,
-  },
-  reason: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: theme.colors.card,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 14,
-  },
-  reasonSelected: {
-    borderColor: theme.colors.danger,
-    backgroundColor: '#FFF7F7',
-  },
-  reasonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  reasonTextSelected: {
-    fontWeight: '800',
-  },
-  errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
-  },
-  errorText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.colors.danger,
-  },
-  input: {
-    backgroundColor: theme.colors.card,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: theme.colors.text,
-  },
-  textArea: {
-    minHeight: 88,
-    textAlignVertical: 'top',
-  },
-  muted: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
-  },
-  actionBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    backgroundColor: 'rgba(243,245,250,0.97)',
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  syncHint: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    marginTop: 6,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    muted: {
+      fontSize: 13,
+      color: c.textMuted,
+    },
+    summaryCard: {
+      backgroundColor: c.dangerBg,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    orderNumber: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: c.danger,
+      letterSpacing: 0.4,
+    },
+    customer: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: c.text,
+      marginTop: 2,
+    },
+    address: {
+      fontSize: 13,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: c.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: spacing.sm,
+    },
+    required: {
+      color: c.danger,
+    },
+    reasons: {
+      gap: spacing.sm,
+    },
+    reason: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 14,
+    },
+    reasonSelected: {
+      borderColor: c.danger,
+      backgroundColor: c.dangerBg,
+    },
+    reasonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text,
+    },
+    reasonTextSelected: {
+      fontWeight: '800',
+    },
+    errorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: spacing.sm,
+    },
+    errorText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.danger,
+    },
+    input: {
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: c.text,
+    },
+    textArea: {
+      minHeight: 88,
+      textAlignVertical: 'top',
+    },
+    actionBar: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      backgroundColor: c.actionBarBg,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    syncHint: {
+      fontSize: 11,
+      color: c.textMuted,
+      textAlign: 'center',
+      marginTop: 6,
+    },
+  });

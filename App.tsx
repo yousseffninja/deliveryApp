@@ -45,17 +45,19 @@ function Root() {
           <RootNavigator />
         </NavigationContainer>
       ) : (
-        <View style={[styles.splash, { backgroundColor: colors.bg }]}>
-          <Text style={[styles.splashTitle, { color: colors.primary }]}>
+        // Brand splash: matches the native launch screen (blue + white mark)
+        // so cold start feels seamless; it hands off to the app on hydration.
+        <View style={[styles.splash, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.splashTitle, { color: colors.white }]}>
             DriverTrack
           </Text>
           <Text
-            style={[styles.splashSubtitle, { color: colors.textMuted }]}
+            style={[styles.splashSubtitle, { color: 'rgba(255,255,255,0.85)' }]}
           >
             Preparing your route…
           </Text>
           <ActivityIndicator
-            color={colors.primary}
+            color={colors.white}
             style={styles.spinner}
           />
         </View>

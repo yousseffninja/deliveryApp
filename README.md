@@ -27,6 +27,10 @@ connectivity. Built as a solution to the *Mobile Technical Task — Delivery Tra
 | Delivery changed on server before submit (conflict) | 409 handling + resolution dialog (discard / keep for review) |
 | Mocked API with all required behaviors | `src/api/mockServer.ts` + in-app **Network Simulator** |
 
+**Beyond the task brief:** the app also ships **dark mode** (light / dark / follow-system,
+persisted), full **Arabic localization with RTL mirroring** (switch languages from the
+settings screen), and a branded **native splash screen** on Android and iOS.
+
 ## Getting started
 
 ```bash

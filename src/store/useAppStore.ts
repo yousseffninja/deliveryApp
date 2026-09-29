@@ -497,9 +497,14 @@ export interface DeliverySyncInfo {
   action: PendingAction | null;
 }
 
-/** Per-delivery sync chip: queued action state wins, then synced bookkeeping. */
-export function selectSyncInfo(state: AppState, delivery: Delivery): DeliverySyncInfo {
-  const action = state.outbox[delivery.id] ?? null;
+/** Pure helper so screens can compute sync chips from narrow slices. */
+export function computeSyncInfo(
+  outbox: Record<number, PendingAction>,
+  syncedLog: Record<number, SyncedRecord>,
+  delivery: Delivery,
+): DeliverySyncInfo {
+  void syncedLog;
+  const action = outbox[delivery.id] ?? null;
   if (action) {
     return { deliveryStatus: delivery.status, syncStatus: action.status, action };
   }
@@ -509,22 +514,28 @@ export function selectSyncInfo(state: AppState, delivery: Delivery): DeliverySyn
   return { deliveryStatus: delivery.status, syncStatus: 'synced', action: null };
 }
 
-export function selectQueueCounts(state: AppState): {
-  waiting: number;
-  failed: number;
-  conflict: number;
-  syncedToday: number;
-  total: number;
-} {
-  const actions = Object.values(state.outbox);
+/** Per-delivery sync chip: queued action state wins, then synced bookkeeping. */
+export function selectSyncInfo(state: AppState, delivery: Delivery): DeliverySyncInfo {
+  return computeSyncInfo(state.outbox, state.syncedLog, delivery);
+}
+
+export function computeQueueCounts(
+  outbox: Record<number, PendingAction>,
+  syncedLog: Record<number, SyncedRecord>,
+): { waiting: number; failed: number; conflict: number; syncedToday: number; total: number } {
+  const actions = Object.values(outbox);
   const dayMs = 24 * 60 * 60 * 1000;
   return {
     waiting: actions.filter(a => a.status === 'waiting' || a.status === 'syncing').length,
     failed: actions.filter(a => a.status === 'failed').length,
     conflict: actions.filter(a => a.status === 'conflict').length,
-    syncedToday: Object.values(state.syncedLog).filter(
+    syncedToday: Object.values(syncedLog).filter(
       r => Date.now() - new Date(r.synced_at).getTime() < dayMs,
     ).length,
     total: actions.length,
   };
+}
+
+export function selectQueueCounts(state: AppState) {
+  return computeQueueCounts(state.outbox, state.syncedLog);
 }

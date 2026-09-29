@@ -7,4 +7,6 @@ export const STORAGE_KEYS = {
   syncedLog: 'drivertrack.synced.v1',
   /** persisted network simulator settings */
   simulator: 'drivertrack.simulator.v1',
+  /** user preferences: appearance (light/dark/system), language */
+  settings: 'drivertrack.settings.v1',
 } as const;

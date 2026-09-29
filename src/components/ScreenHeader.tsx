@@ -1,7 +1,8 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { theme } from '../theme';
+import { ThemeColors, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface ScreenHeaderProps {
   title: string;
@@ -11,12 +12,14 @@ interface ScreenHeaderProps {
 
 /** In-app header for screens that hide the native stack header. */
 export function ScreenHeader({ title, subtitle, right }: ScreenHeaderProps) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.row}>
         <View style={styles.badge}>
-          <Icon name="navigate" size={14} color="#FFFFFF" />
+          <Icon name="navigate" size={14} color={colors.white} />
           <Text style={styles.badgeText}>DriverTrack</Text>
         </View>
         {right}
@@ -34,6 +37,8 @@ interface IconButtonProps {
 }
 
 export function HeaderIconButton({ name, onPress, color }: IconButtonProps) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -41,56 +46,57 @@ export function HeaderIconButton({ name, onPress, color }: IconButtonProps) {
       style={styles.iconButton}
       hitSlop={8}
     >
-      <Icon name={name} size={20} color={color ?? theme.colors.text} />
+      <Icon name={name} size={20} color={color ?? colors.text} />
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: theme.colors.bg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 13,
-    letterSpacing: 0.3,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: theme.colors.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  },
-  iconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: c.bg,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: c.primary,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+    },
+    badgeText: {
+      color: c.white,
+      fontWeight: '800',
+      fontSize: 13,
+      letterSpacing: 0.3,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '800',
+      color: c.text,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    iconButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });

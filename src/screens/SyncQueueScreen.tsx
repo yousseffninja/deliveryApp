@@ -8,7 +8,8 @@ import { ConflictDialog } from '../components/ConflictDialog';
 import { HeaderIconButton, ScreenHeader } from '../components/ScreenHeader';
 import { StateView } from '../components/StateViews';
 import { computeQueueCounts, useAppStore } from '../store/useAppStore';
-import { theme } from '../theme';
+import { ThemeColors, spacing, radius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { PendingAction } from '../types';
 import { failureReasonLabel, timeAgo } from '../utils/format';
 
@@ -20,6 +21,8 @@ const PROFILE_LABELS: Record<string, string> = {
 };
 
 export function SyncQueueScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const outbox = useAppStore(s => s.outbox);
   const syncedLog = useAppStore(s => s.syncedLog);
   const deliveries = useAppStore(s => s.deliveries);
@@ -34,7 +37,8 @@ export function SyncQueueScreen() {
 
   const [conflictId, setConflictId] = useState<number | null>(null);
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavigationProp<Record<string, object | undefined>>>();
+  const navigation =
+    useNavigation<NavigationProp<Record<string, object | undefined>>>();
 
   const queue = useMemo(
     () => computeQueueCounts(outbox, syncedLog),
@@ -82,14 +86,29 @@ export function SyncQueueScreen() {
 
       <ScrollView
         contentContainerStyle={{
-          padding: theme.spacing.lg,
-          paddingBottom: insets.bottom + theme.spacing.xl,
+          padding: spacing.lg,
+          paddingBottom: insets.bottom + spacing.xl,
         }}
       >
         <View style={styles.statsRow}>
-          <StatCard label="Waiting" value={queue.waiting} color={theme.colors.warning} />
-          <StatCard label="Failed" value={queue.failed} color={theme.colors.danger} />
-          <StatCard label="Synced today" value={queue.syncedToday} color={theme.colors.success} />
+          <StatCard
+            label="Waiting"
+            value={queue.waiting}
+            color={colors.warning}
+            styles={styles}
+          />
+          <StatCard
+            label="Failed"
+            value={queue.failed}
+            color={colors.danger}
+            styles={styles}
+          />
+          <StatCard
+            label="Synced today"
+            value={queue.syncedToday}
+            color={colors.success}
+            styles={styles}
+          />
         </View>
 
         <View style={styles.actionsRow}>
@@ -114,21 +133,29 @@ export function SyncQueueScreen() {
         {actions.length === 0 ? (
           <StateView
             icon="checkmark-done-circle-outline"
-            iconBg={theme.colors.successBg}
-            iconColor={theme.colors.success}
+            iconBg={colors.successBg}
+            iconColor={colors.success}
             title="Queue is clear"
             message="Every confirmation reached the server. Updates made offline will appear here while they wait to sync."
           />
         ) : null}
 
         {attention.length > 0 ? (
-          <SectionTitle text={`Needs attention (${attention.length})`} />
+          <SectionTitle
+            text={`Needs attention (${attention.length})`}
+            styles={styles}
+          />
         ) : null}
         {attention.map(action => (
           <ActionCard
             key={action.id}
             action={action}
-            customerName={deliveries[action.delivery_id]?.order_number ?? `#${action.delivery_id}`}
+            styles={styles}
+            colors={colors}
+            orderNumber={
+              deliveries[action.delivery_id]?.order_number ??
+              `#${action.delivery_id}`
+            }
             onRetry={() => void retryAction(action.delivery_id)}
             onDiscard={() => void discardAction(action.delivery_id)}
             onResolve={() => setConflictId(action.delivery_id)}
@@ -136,12 +163,22 @@ export function SyncQueueScreen() {
           />
         ))}
 
-        {waiting.length > 0 ? <SectionTitle text={`Waiting to sync (${waiting.length})`} /> : null}
+        {waiting.length > 0 ? (
+          <SectionTitle
+            text={`Waiting to sync (${waiting.length})`}
+            styles={styles}
+          />
+        ) : null}
         {waiting.map(action => (
           <ActionCard
             key={action.id}
             action={action}
-            customerName={deliveries[action.delivery_id]?.order_number ?? `#${action.delivery_id}`}
+            styles={styles}
+            colors={colors}
+            orderNumber={
+              deliveries[action.delivery_id]?.order_number ??
+              `#${action.delivery_id}`
+            }
             onRetry={() => void retryAction(action.delivery_id)}
             onDiscard={() => void discardAction(action.delivery_id)}
             disabled={!online}
@@ -149,11 +186,15 @@ export function SyncQueueScreen() {
         ))}
 
         {syncedEntries.length > 0 ? (
-          <SectionTitle text="Recently synced" />
+          <SectionTitle text="Recently synced" styles={styles} />
         ) : null}
         {syncedEntries.map(({ delivery, record }) => (
           <View key={record.action_id} style={styles.syncedRow}>
-            <Icon name="checkmark-circle" size={20} color={theme.colors.success} />
+            <Icon
+              name="checkmark-circle"
+              size={20}
+              color={colors.success}
+            />
             <View style={styles.syncedTextBlock}>
               <Text style={styles.syncedTitle}>
                 {delivery.order_number} ·{' '}
@@ -181,7 +222,7 @@ export function SyncQueueScreen() {
   );
 }
 
-function SectionTitle({ text }: { text: string }) {
+function SectionTitle({ text, styles }: { text: string; styles: styles_type }) {
   return <Text style={styles.sectionTitle}>{text}</Text>;
 }
 
@@ -189,10 +230,12 @@ function StatCard({
   label,
   value,
   color,
+  styles,
 }: {
   label: string;
   value: number;
   color: string;
+  styles: styles_type;
 }) {
   return (
     <View style={styles.statCard}>
@@ -204,18 +247,22 @@ function StatCard({
 
 function ActionCard({
   action,
-  customerName,
+  orderNumber,
   onRetry,
   onDiscard,
   onResolve,
   disabled,
+  styles,
+  colors,
 }: {
   action: PendingAction;
-  customerName: string;
+  orderNumber: string;
   onRetry: () => void;
   onDiscard: () => void;
   onResolve?: () => void;
   disabled?: boolean;
+  styles: styles_type;
+  colors: ThemeColors;
 }) {
   const isConflict = action.status === 'conflict';
   const isFailed = action.status === 'failed';
@@ -234,7 +281,10 @@ function ActionCard({
         }`
       : `Failed report · ${
           'reason' in action.payload
-            ? failureReasonLabel((action.payload as { reason: Parameters<typeof failureReasonLabel>[0] }).reason)
+            ? failureReasonLabel(
+                (action.payload as { reason: Parameters<typeof failureReasonLabel>[0] })
+                  .reason,
+              )
             : 'reason'
         }`;
 
@@ -242,7 +292,11 @@ function ActionCard({
     <View
       style={[
         styles.actionCard,
-        isConflict ? styles.actionCardConflict : isFailed ? styles.actionCardFailed : null,
+        isConflict
+          ? styles.actionCardConflict
+          : isFailed
+            ? styles.actionCardFailed
+            : null,
       ]}
     >
       <View style={styles.actionHeader}>
@@ -257,16 +311,18 @@ function ActionCard({
                   : 'time-outline'
           }
           size={18}
-          color={isConflict ? '#7E22CE' : isFailed ? theme.colors.danger : theme.colors.warning}
+          color={
+            isConflict ? colors.conflict : isFailed ? colors.danger : colors.warning
+          }
         />
         <Text
           style={[
             styles.actionTitle,
             isConflict
-              ? { color: '#7E22CE' }
+              ? { color: colors.conflict }
               : isFailed
-                ? { color: theme.colors.danger }
-                : { color: theme.colors.warning },
+                ? { color: colors.danger }
+                : { color: colors.warning },
           ]}
         >
           {title}
@@ -274,7 +330,7 @@ function ActionCard({
         <Text style={styles.actionTime}>{timeAgo(action.created_at)}</Text>
       </View>
 
-      <Text style={styles.actionOrder}>{customerName}</Text>
+      <Text style={styles.actionOrder}>{orderNumber}</Text>
       <Text style={styles.actionMeta}>{payloadSummary}</Text>
       <Text style={styles.actionMeta}>
         {action.attempts} attempt{action.attempts === 1 ? '' : 's'}
@@ -305,124 +361,127 @@ function ActionCard({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: theme.colors.bg,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.lg,
-  },
-  half: {
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: theme.colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginTop: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
-  },
-  actionCard: {
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-  },
-  actionCardFailed: {
-    borderColor: theme.colors.dangerBg,
-    backgroundColor: '#FFF8F8',
-  },
-  actionCardConflict: {
-    borderColor: '#E9D5FF',
-    backgroundColor: '#FAF5FF',
-  },
-  actionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionTitle: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  actionTime: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-  },
-  actionOrder: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: theme.colors.text,
-    marginTop: theme.spacing.sm,
-  },
-  actionMeta: {
-    fontSize: 12,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-    lineHeight: 17,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  syncedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-  },
-  syncedTextBlock: {
-    flex: 1,
-  },
-  syncedTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  syncedMeta: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    marginTop: 1,
-  },
-});
+type styles_type = ReturnType<typeof makeStyles>;
+
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: c.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+    },
+    statValue: {
+      fontSize: 20,
+      fontWeight: '800',
+    },
+    statLabel: {
+      fontSize: 11,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    actionsRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+    },
+    half: {
+      flex: 1,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: c.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    actionCard: {
+      backgroundColor: c.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    actionCardFailed: {
+      borderColor: c.dangerBg,
+      backgroundColor: c.dangerBg,
+    },
+    actionCardConflict: {
+      borderColor: c.conflictBg,
+      backgroundColor: c.conflictBg,
+    },
+    actionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    actionTitle: {
+      flex: 1,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    actionTime: {
+      fontSize: 11,
+      color: c.textMuted,
+    },
+    actionOrder: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: c.text,
+      marginTop: spacing.sm,
+    },
+    actionMeta: {
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: 2,
+      lineHeight: 17,
+    },
+    actionButtons: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    syncedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: c.card,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    syncedTextBlock: {
+      flex: 1,
+    },
+    syncedTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.text,
+    },
+    syncedMeta: {
+      fontSize: 11,
+      color: c.textMuted,
+      marginTop: 1,
+    },
+  });

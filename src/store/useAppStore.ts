@@ -4,6 +4,7 @@ import { mockServer } from '../api/mockServer';
 import { api } from '../api/client';
 import { DeliveriesRepo } from '../storage/deliveriesRepo';
 import { OutboxRepo } from '../storage/outboxRepo';
+import { SettingsRepo } from '../storage/settingsRepo';
 import { SimulatorRepo } from '../storage/simulatorRepo';
 import { SyncedLogRepo } from '../storage/syncedLogRepo';
 import { connectivity } from '../sync/connectivity';
@@ -17,6 +18,7 @@ import {
   PendingAction,
   SyncedRecord,
 } from '../types';
+import type { ThemeModePreference } from '../theme';
 import { makeUuid } from '../utils/uuid';
 
 /** Module-level repos (AsyncStorage-backed). Tests can construct their own. */
@@ -24,6 +26,7 @@ export const deliveriesRepo = new DeliveriesRepo();
 export const outboxRepo = new OutboxRepo();
 export const syncedLogRepo = new SyncedLogRepo();
 export const simulatorRepo = new SimulatorRepo();
+export const settingsRepo = new SettingsRepo();
 
 export interface CompleteDeliveryInput {
   deliveryId: number;
@@ -53,6 +56,7 @@ interface AppState {
   deviceConnected: boolean | null;
   /** effective connectivity: device reachability AND simulator not forcing offline */
   online: boolean;
+  themeMode: ThemeModePreference;
   loading: boolean;
   loadError: string | null;
   showingCached: boolean;
@@ -61,6 +65,7 @@ interface AppState {
 
   bootstrap: () => Promise<void>;
   refresh: (options?: { silent?: boolean }) => Promise<void>;
+  setThemeMode: (mode: ThemeModePreference) => Promise<void>;
   completeDelivery: (input: CompleteDeliveryInput) => Promise<ActionResult>;
   failDelivery: (input: FailDeliveryInput) => Promise<ActionResult>;
   retryAction: (deliveryId: number) => Promise<void>;
@@ -97,6 +102,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   simulator: { profile: 'online', armedConflictDeliveryId: null },
   deviceConnected: null,
   online: false,
+  themeMode: 'system',
   loading: false,
   loadError: null,
   showingCached: false,
@@ -107,12 +113,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
     if (get().hydrated) {
       return;
     }
-    const [cachedDeliveries, queuedActions, syncedLog, simulatorConfig] =
+    const [cachedDeliveries, queuedActions, syncedLog, simulatorConfig, settings] =
       await Promise.all([
         deliveriesRepo.loadAll(),
         outboxRepo.list(),
         syncedLogRepo.load(),
         simulatorRepo.load(),
+        settingsRepo.load(),
       ]);
 
     mockServer.configure(
@@ -134,6 +141,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       },
       deviceConnected,
       online,
+      themeMode: settings.themeMode,
     });
 
     // On every connectivity flip, re-evaluate effective online state and flush
@@ -159,6 +167,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
         syncEngine.syncAll('connectivity'),
       ]);
     }
+  },
+
+  setThemeMode: async mode => {
+    await settingsRepo.save({ themeMode: mode });
+    set({ themeMode: mode });
   },
 
   refresh: async options => {

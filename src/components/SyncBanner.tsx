@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { theme } from '../theme';
+import { ThemeColors, spacing, radius } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface SyncBannerProps {
   online: boolean;
@@ -13,6 +14,9 @@ interface SyncBannerProps {
  * offline with N waiting / N failed, or syncing N updates.
  */
 export function SyncBanner({ online, queueCount, conflictCount = 0 }: SyncBannerProps) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   if (online && queueCount === 0) {
     return null;
   }
@@ -20,9 +24,21 @@ export function SyncBanner({ online, queueCount, conflictCount = 0 }: SyncBanner
   const offline = !online;
   const attention = conflictCount > 0;
 
-  const icon = offline ? 'cloud-offline-outline' : attention ? 'warning-outline' : 'sync-circle-outline';
-  const bg = offline ? theme.colors.warningBg : attention ? '#F3E8FF' : theme.colors.infoBg;
-  const fg = offline ? theme.colors.warning : attention ? '#7E22CE' : theme.colors.info;
+  const icon = offline
+    ? 'cloud-offline-outline'
+    : attention
+      ? 'warning-outline'
+      : 'sync-circle-outline';
+  const bg = offline
+    ? colors.warningBg
+    : attention
+      ? colors.conflictBg
+      : colors.infoBg;
+  const fg = offline
+    ? colors.warning
+    : attention
+      ? colors.conflict
+      : colors.info;
 
   let message: string;
   if (offline) {
@@ -44,20 +60,21 @@ export function SyncBanner({ online, queueCount, conflictCount = 0 }: SyncBanner
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.sm,
-    borderRadius: theme.radius.sm,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 8,
-  },
-  text: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginHorizontal: spacing.lg,
+      marginBottom: spacing.sm,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+    },
+    text: {
+      flex: 1,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+  });

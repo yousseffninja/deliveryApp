@@ -1,16 +1,19 @@
 import { asyncStorageKv, KeyValueStore } from './keyValue';
 import { STORAGE_KEYS } from './keys';
 import { ThemeModePreference } from '../theme';
+import type { Locale } from '../i18n';
 
 export interface AppSettings {
   themeMode: ThemeModePreference;
+  locale: Locale;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   themeMode: 'system',
+  locale: 'en',
 };
 
-/** Persists user preferences (appearance). Language lands with the i18n PR. */
+/** Persists user preferences: appearance and language. */
 export class SettingsRepo {
   constructor(private kv: KeyValueStore = asyncStorageKv) {}
 
@@ -23,6 +26,7 @@ export class SettingsRepo {
       const parsed = JSON.parse(raw) as Partial<AppSettings>;
       return {
         themeMode: parsed.themeMode ?? DEFAULT_SETTINGS.themeMode,
+        locale: parsed.locale === 'ar' ? 'ar' : DEFAULT_SETTINGS.locale,
       };
     } catch {
       return { ...DEFAULT_SETTINGS };

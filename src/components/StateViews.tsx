@@ -1,8 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Button } from './Button';
-import { ThemeColors, spacing, radius } from '../theme';
+import { ThemeColors, spacing } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { t } from '../i18n';
 
 interface StateViewProps {
   icon: string;
@@ -42,12 +43,12 @@ export function StateView({
   );
 }
 
-export function LoadingView({ label = 'Loading deliveries…' }: { label?: string }) {
+export function LoadingView({ label }: { label?: string }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{label}</Text>
+      <Text style={styles.title}>{label ?? t('common.loading')}</Text>
     </View>
   );
 }

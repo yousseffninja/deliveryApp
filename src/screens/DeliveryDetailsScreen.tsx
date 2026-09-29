@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -21,6 +21,7 @@ import {
 import { computeSyncInfo, useAppStore } from '../store/useAppStore';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n';
 import { RouteStackParamList } from '../navigation/types';
 import { formatMoney, failureReasonLabel, timeAgo } from '../utils/format';
 
@@ -36,15 +37,18 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [conflictOpen, setConflictOpen] = useState(false);
 
+  const { t: translate, locale } = useI18n();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+
+  useEffect(() => {
+    navigation.setOptions({ title: translate('details.navTitle') });
+  }, [navigation, translate, locale]);
 
   if (!delivery) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text style={styles.muted}>
-          Delivery not found. Pull to refresh on the route screen.
-        </Text>
+        <Text style={styles.muted}>{translate('details.notFoundLong')}</Text>
       </View>
     );
   }
@@ -55,18 +59,14 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
   const isConflict = action?.status === 'conflict';
 
   const confirmDiscard = () => {
-    Alert.alert(
-      'Discard this update?',
-      'Your confirmation was never sent to the server. The delivery will go back to pending on this device.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Discard',
-          style: 'destructive',
-          onPress: () => void discardAction(delivery.id),
-        },
-      ],
-    );
+    Alert.alert(translate('details.discardTitle'), translate('details.discardBody'), [
+      { text: translate('common.cancel'), style: 'cancel' },
+      {
+        text: translate('common.discard'),
+        style: 'destructive',
+        onPress: () => void discardAction(delivery.id),
+      },
+    ]);
   };
 
   const resolveConflict = () => {
@@ -81,7 +81,6 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
           paddingBottom: insets.bottom + 120,
         }}
       >
-        {/* summary */}
         <View style={styles.card}>
           <View style={styles.rowBetween}>
             <Text style={styles.orderNumber}>{delivery.order_number}</Text>
@@ -95,40 +94,38 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
 
           <View style={styles.divider} />
           <View style={styles.rowBetween}>
-            <Text style={styles.muted}>Amount due (on delivery)</Text>
+            <Text style={styles.muted}>{translate('details.amountDue')}</Text>
             <Text style={styles.amount}>{formatMoney(delivery.amount_due)}</Text>
           </View>
         </View>
 
-        {/* queued action card */}
         {action && !isConflict ? (
           <View style={[styles.card, styles.noticeCard]}>
             <View style={styles.noticeRow}>
               <Icon
-                name={
-                  action.status === 'failed'
-                    ? 'alert-circle'
-                    : 'time-outline'
-                }
+                name={action.status === 'failed' ? 'alert-circle' : 'time-outline'}
                 size={20}
-                color={
-                  action.status === 'failed' ? colors.danger : colors.warning
-                }
+                color={action.status === 'failed' ? colors.danger : colors.warning}
               />
               <View style={styles.noticeTextBlock}>
                 <Text style={styles.noticeTitle}>
                   {action.status === 'failed'
-                    ? 'Failed to sync'
+                    ? translate('sync.failed')
                     : action.status === 'syncing'
-                      ? 'Syncing now…'
-                      : 'Waiting to sync'}
+                      ? translate('details.syncing')
+                      : translate('sync.waiting')}
                 </Text>
                 <Text style={styles.noticeBody}>
-                  {action.type === 'complete' ? 'Delivered' : 'Failed delivery'}{' '}
-                  report for {delivery.order_number} ·{' '}
-                  {timeAgo(action.created_at)}
+                  {translate('details.reportFor', {
+                    type:
+                      action.type === 'complete'
+                        ? translate('details.actionDelivered')
+                        : translate('details.actionFailed'),
+                    order: delivery.order_number,
+                  })}{' '}
+                  · {timeAgo(action.created_at, Date.now(), locale)}
                   {action.attempts > 0
-                    ? ` · ${action.attempts} attempt${action.attempts === 1 ? '' : 's'}`
+                    ? ` · ${translate('details.attempts', { count: action.attempts })}`
                     : ''}
                   {action.last_error ? `\n${action.last_error}` : ''}
                 </Text>
@@ -137,14 +134,14 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
             <View style={styles.buttonRow}>
               <View style={styles.halfButton}>
                 <Button
-                  label="Retry now"
+                  label={translate('details.retryNow')}
                   variant="secondary"
                   onPress={() => void retryAction(delivery.id)}
                 />
               </View>
               <View style={styles.halfButton}>
                 <Button
-                  label="Discard"
+                  label={translate('common.discard')}
                   variant="secondary"
                   onPress={confirmDiscard}
                 />
@@ -153,30 +150,32 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
           </View>
         ) : null}
 
-        {/* conflict card */}
         {isConflict ? (
           <View style={[styles.card, styles.conflictCard]}>
             <View style={styles.noticeRow}>
               <Icon name="warning" size={20} color={colors.conflict} />
               <View style={styles.noticeTextBlock}>
                 <Text style={[styles.noticeTitle, { color: colors.conflict }]}>
-                  Delivery changed on server
+                  {translate('details.conflictCardTitle')}
                 </Text>
                 <Text style={styles.noticeBody}>
-                  {delivery.order_number} was modified before your{' '}
-                  {action?.type === 'complete' ? 'delivered' : 'failed'} report
-                  arrived. Review and choose how to resolve it.
+                  {translate('details.conflictCardBody', {
+                    order: delivery.order_number,
+                    type:
+                      action?.type === 'complete'
+                        ? translate('details.actionDelivered')
+                        : translate('details.actionFailed'),
+                  })}
                 </Text>
               </View>
             </View>
-            <Button label="Resolve conflict" onPress={resolveConflict} />
+            <Button label={translate('details.resolve')} onPress={resolveConflict} />
           </View>
         ) : null}
 
-        {/* customer */}
         <SectionCard
           icon="person-outline"
-          title="Customer"
+          title={translate('details.customer')}
           styles={styles}
           iconColor={colors.primary}
         >
@@ -185,14 +184,14 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
           <View style={styles.buttonRow}>
             <View style={styles.halfButton}>
               <Button
-                label="Call customer"
+                label={translate('details.callCustomer')}
                 variant="secondary"
                 onPress={() => void Linking.openURL(`tel:${delivery.phone}`)}
               />
             </View>
             <View style={styles.halfButton}>
               <Button
-                label="Open in Maps"
+                label={translate('details.openMaps')}
                 variant="secondary"
                 onPress={() =>
                   void Linking.openURL(
@@ -204,30 +203,25 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
           </View>
         </SectionCard>
 
-        {/* address + notes */}
         <SectionCard
           icon="location-outline"
-          title="Delivery address"
+          title={translate('details.addressTitle')}
           styles={styles}
           iconColor={colors.primary}
         >
           <Text style={styles.bodyText}>{delivery.address}</Text>
           {delivery.note ? (
             <View style={[styles.noteBox, { backgroundColor: colors.warningBg }]}>
-              <Text
-                style={[styles.noteLabel, { color: colors.warning }]}
-              >
-                Customer note
+              <Text style={[styles.noteLabel, { color: colors.warning }]}>
+                {translate('details.customerNote')}
               </Text>
               <Text style={styles.noteText}>{delivery.note}</Text>
             </View>
           ) : null}
           {delivery.status === 'failed' && delivery.failure_reason ? (
-            <View
-              style={[styles.noteBox, { backgroundColor: colors.dangerBg }]}
-            >
+            <View style={[styles.noteBox, { backgroundColor: colors.dangerBg }]}>
               <Text style={[styles.noteLabel, { color: colors.danger }]}>
-                Failure reason
+                {translate('details.failureReason')}
               </Text>
               <Text style={styles.noteText}>
                 {failureReasonLabel(delivery.failure_reason)}
@@ -235,11 +229,9 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
             </View>
           ) : null}
           {delivery.status === 'delivered' && delivery.recipient_name ? (
-            <View
-              style={[styles.noteBox, { backgroundColor: colors.successBg }]}
-            >
+            <View style={[styles.noteBox, { backgroundColor: colors.successBg }]}>
               <Text style={[styles.noteLabel, { color: colors.success }]}>
-                Delivered to
+                {translate('details.deliveredTo')}
               </Text>
               <Text style={styles.noteText}>{delivery.recipient_name}</Text>
             </View>
@@ -247,21 +239,23 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
         </SectionCard>
 
         <Text style={styles.footerMeta}>
-          Last server update {timeAgo(delivery.updated_at)} · v{delivery.version}
+          {translate('details.footer', {
+            time: timeAgo(delivery.updated_at, Date.now(), locale),
+            version: delivery.version,
+          })}
           {syncedLog[delivery.id]
-            ? ` · your report synced ${timeAgo(syncedLog[delivery.id].synced_at)}`
+            ? translate('details.footerSynced', {
+                time: timeAgo(syncedLog[delivery.id].synced_at, Date.now(), locale),
+              })
             : ''}
         </Text>
       </ScrollView>
 
-      {/* primary actions */}
       {isPending ? (
-        <View
-          style={[styles.actionBar, { paddingBottom: insets.bottom + 12 }]}
-        >
+        <View style={[styles.actionBar, { paddingBottom: insets.bottom + 12 }]}>
           <View style={styles.halfButton}>
             <Button
-              label="Report Failed Delivery"
+              label={translate('details.reportFailed')}
               variant="danger"
               onPress={() =>
                 navigation.navigate('FailDelivery', { deliveryId: delivery.id })
@@ -270,7 +264,7 @@ export function DeliveryDetailsScreen({ route, navigation }: Props) {
           </View>
           <View style={styles.halfButton}>
             <Button
-              label="Mark as Delivered"
+              label={translate('details.markDelivered')}
               onPress={() =>
                 navigation.navigate('CompleteDelivery', {
                   deliveryId: delivery.id,
@@ -328,6 +322,7 @@ const makeStyles = (c: ThemeColors) =>
       backgroundColor: c.bg,
     },
     center: {
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       padding: spacing.xl,

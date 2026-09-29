@@ -6,6 +6,7 @@ import { DeliverySyncInfo } from '../store/useAppStore';
 import { DeliveryStatusChip, PaymentChip, SyncStatusChip } from './StatusChips';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n';
 
 interface DeliveryCardProps {
   delivery: Delivery;
@@ -15,6 +16,7 @@ interface DeliveryCardProps {
 
 export function DeliveryCard({ delivery, syncInfo, onPress }: DeliveryCardProps) {
   const { colors } = useTheme();
+  const { isRTL } = useI18n();
   const styles = makeStyles(colors);
 
   return (
@@ -46,7 +48,11 @@ export function DeliveryCard({ delivery, syncInfo, onPress }: DeliveryCardProps)
         <DeliveryStatusChip status={syncInfo.deliveryStatus} />
         <SyncStatusChip syncStatus={syncInfo.syncStatus} />
         <View style={styles.chevron}>
-          <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+          <Icon
+            name={isRTL ? 'chevron-back' : 'chevron-forward'}
+            size={18}
+            color={colors.textMuted}
+          />
         </View>
       </View>
     </TouchableOpacity>

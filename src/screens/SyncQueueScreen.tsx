@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,19 +10,16 @@ import { StateView } from '../components/StateViews';
 import { computeQueueCounts, useAppStore } from '../store/useAppStore';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n/translations';
 import { PendingAction } from '../types';
 import { failureReasonLabel, timeAgo } from '../utils/format';
 
-const PROFILE_LABELS: Record<string, string> = {
-  online: 'Simulator: Online',
-  slow: 'Simulator: Slow 3G',
-  flaky: 'Simulator: Flaky server',
-  offline: 'Simulator: Airplane mode',
-};
-
 export function SyncQueueScreen() {
   const { colors } = useTheme();
+  const { t: translate, locale } = useI18n();
   const styles = makeStyles(colors);
+
   const outbox = useAppStore(s => s.outbox);
   const syncedLog = useAppStore(s => s.syncedLog);
   const deliveries = useAppStore(s => s.deliveries);
@@ -39,6 +36,17 @@ export function SyncQueueScreen() {
   const insets = useSafeAreaInsets();
   const navigation =
     useNavigation<NavigationProp<Record<string, object | undefined>>>();
+
+  useEffect(() => {
+    navigation.setOptions?.({ title: translate('queue.title') });
+  }, [navigation, translate, locale]);
+
+  const profileLabelKeys: Record<string, TranslationKey> = {
+    online: 'queue.profileOnline',
+    slow: 'queue.profileSlow',
+    flaky: 'queue.profileFlaky',
+    offline: 'queue.profileOffline',
+  };
 
   const queue = useMemo(
     () => computeQueueCounts(outbox, syncedLog),
@@ -72,9 +80,11 @@ export function SyncQueueScreen() {
   return (
     <View style={styles.screen}>
       <ScreenHeader
-        title="Sync Queue"
-        subtitle={`${PROFILE_LABELS[simulator.profile] ?? simulator.profile} · ${
-          deviceConnected === false ? 'device offline' : 'device online'
+        title={translate('queue.title')}
+        subtitle={`${translate(profileLabelKeys[simulator.profile] ?? 'queue.profileOnline')} · ${
+          deviceConnected === false
+            ? translate('queue.deviceOffline')
+            : translate('queue.deviceOnline')
         }`}
         right={
           <HeaderIconButton
@@ -92,19 +102,19 @@ export function SyncQueueScreen() {
       >
         <View style={styles.statsRow}>
           <StatCard
-            label="Waiting"
+            label={translate('queue.statWaiting')}
             value={queue.waiting}
             color={colors.warning}
             styles={styles}
           />
           <StatCard
-            label="Failed"
+            label={translate('queue.statFailed')}
             value={queue.failed}
             color={colors.danger}
             styles={styles}
           />
           <StatCard
-            label="Synced today"
+            label={translate('queue.statSynced')}
             value={queue.syncedToday}
             color={colors.success}
             styles={styles}
@@ -114,7 +124,7 @@ export function SyncQueueScreen() {
         <View style={styles.actionsRow}>
           <View style={styles.half}>
             <Button
-              label="Sync now"
+              label={translate('queue.syncNow')}
               onPress={() => void syncNow()}
               loading={syncingNow}
               disabled={!online || queue.total === 0}
@@ -122,7 +132,7 @@ export function SyncQueueScreen() {
           </View>
           <View style={styles.half}>
             <Button
-              label="Retry all failed"
+              label={translate('queue.retryAll')}
               variant="secondary"
               onPress={() => void retryAllFailed()}
               disabled={!online || queue.failed === 0}
@@ -135,14 +145,14 @@ export function SyncQueueScreen() {
             icon="checkmark-done-circle-outline"
             iconBg={colors.successBg}
             iconColor={colors.success}
-            title="Queue is clear"
-            message="Every confirmation reached the server. Updates made offline will appear here while they wait to sync."
+            title={translate('queue.clearTitle')}
+            message={translate('queue.clearBody')}
           />
         ) : null}
 
         {attention.length > 0 ? (
           <SectionTitle
-            text={`Needs attention (${attention.length})`}
+            text={translate('queue.needsAttention', { count: attention.length })}
             styles={styles}
           />
         ) : null}
@@ -165,7 +175,7 @@ export function SyncQueueScreen() {
 
         {waiting.length > 0 ? (
           <SectionTitle
-            text={`Waiting to sync (${waiting.length})`}
+            text={translate('queue.waitingSection', { count: waiting.length })}
             styles={styles}
           />
         ) : null}
@@ -186,22 +196,25 @@ export function SyncQueueScreen() {
         ))}
 
         {syncedEntries.length > 0 ? (
-          <SectionTitle text="Recently synced" styles={styles} />
+          <SectionTitle text={translate('queue.recentlySynced')} styles={styles} />
         ) : null}
         {syncedEntries.map(({ delivery, record }) => (
           <View key={record.action_id} style={styles.syncedRow}>
-            <Icon
-              name="checkmark-circle"
-              size={20}
-              color={colors.success}
-            />
+            <Icon name="checkmark-circle" size={20} color={colors.success} />
             <View style={styles.syncedTextBlock}>
               <Text style={styles.syncedTitle}>
-                {delivery.order_number} ·{' '}
-                {record.type === 'complete' ? 'Delivered' : 'Failed report'}
+                {translate('queue.syncedType', {
+                  order: delivery.order_number,
+                  type:
+                    record.type === 'complete'
+                      ? translate('queue.deliveredShort')
+                      : translate('queue.failedShort'),
+                })}
               </Text>
               <Text style={styles.syncedMeta}>
-                Synced {timeAgo(record.synced_at)} · OK
+                {translate('queue.syncedMeta', {
+                  time: timeAgo(record.synced_at, Date.now(), locale),
+                })}
               </Text>
             </View>
           </View>
@@ -264,29 +277,33 @@ function ActionCard({
   styles: styles_type;
   colors: ThemeColors;
 }) {
+  const { t: translate, locale } = useI18n();
   const isConflict = action.status === 'conflict';
   const isFailed = action.status === 'failed';
   const title = isConflict
-    ? 'Conflict — delivery changed on server'
+    ? translate('queue.conflictTitle')
     : isFailed
-      ? 'Failed to sync'
+      ? translate('sync.failed')
       : action.status === 'syncing'
-        ? 'Syncing now…'
-        : 'Waiting to sync';
+        ? translate('details.syncing')
+        : translate('sync.waiting');
 
   const payloadSummary =
     action.type === 'complete'
-      ? `Delivered confirmation · to ${
-          (action.payload as { recipient_name?: string }).recipient_name ?? 'recipient'
-        }`
-      : `Failed report · ${
-          'reason' in action.payload
-            ? failureReasonLabel(
-                (action.payload as { reason: Parameters<typeof failureReasonLabel>[0] })
-                  .reason,
-              )
-            : 'reason'
-        }`;
+      ? translate('queue.deliveredSummary', {
+          name:
+            (action.payload as { recipient_name?: string }).recipient_name ??
+            translate('queue.recipient'),
+        })
+      : translate('queue.failedSummary', {
+          reason:
+            'reason' in action.payload
+              ? failureReasonLabel(
+                  (action.payload as { reason: Parameters<typeof failureReasonLabel>[0] })
+                    .reason,
+                )
+              : translate('queue.recipient'),
+        });
 
   return (
     <View
@@ -327,26 +344,32 @@ function ActionCard({
         >
           {title}
         </Text>
-        <Text style={styles.actionTime}>{timeAgo(action.created_at)}</Text>
+        <Text style={styles.actionTime}>
+          {timeAgo(action.created_at, Date.now(), locale)}
+        </Text>
       </View>
 
       <Text style={styles.actionOrder}>{orderNumber}</Text>
       <Text style={styles.actionMeta}>{payloadSummary}</Text>
       <Text style={styles.actionMeta}>
-        {action.attempts} attempt{action.attempts === 1 ? '' : 's'}
+        {translate('queue.attempts', { count: action.attempts })}
         {action.last_error ? ` · ${action.last_error}` : ''}
       </Text>
 
       <View style={styles.actionButtons}>
         {isConflict && onResolve ? (
           <View style={styles.actionButton}>
-            <Button label="Resolve" variant="secondary" onPress={onResolve} />
+            <Button
+              label={translate('queue.resolve')}
+              variant="secondary"
+              onPress={onResolve}
+            />
           </View>
         ) : null}
         {!isConflict ? (
           <View style={styles.actionButton}>
             <Button
-              label={isFailed ? 'Retry now' : 'Sync now'}
+              label={isFailed ? translate('details.retryNow') : translate('queue.syncNowAction')}
               variant="secondary"
               onPress={onRetry}
               disabled={disabled}
@@ -354,7 +377,7 @@ function ActionCard({
           </View>
         ) : null}
         <View style={styles.actionButton}>
-          <Button label="Discard" variant="secondary" onPress={onDiscard} />
+          <Button label={translate('common.discard')} variant="secondary" onPress={onDiscard} />
         </View>
       </View>
     </View>

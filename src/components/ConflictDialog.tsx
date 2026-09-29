@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { PendingAction } from '../types';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { t, useI18n } from '../i18n';
 import { timeAgo } from '../utils/format';
 
 interface ConflictDialogProps {
@@ -18,10 +19,13 @@ interface ConflictDialogProps {
  */
 export function ConflictDialog({ action, onDiscard, onKeep }: ConflictDialogProps) {
   const { colors } = useTheme();
+  const { t: translate, locale } = useI18n();
   const styles = makeStyles(colors);
   const server = action.server_delivery;
-  const actionLabel =
-    action.type === 'complete' ? 'delivered confirmation' : 'failure report';
+  const actionType =
+    action.type === 'complete'
+      ? translate('conflict.completeType')
+      : translate('conflict.failType');
 
   return (
     <Modal transparent animationType="fade" visible onRequestClose={onKeep}>
@@ -29,31 +33,34 @@ export function ConflictDialog({ action, onDiscard, onKeep }: ConflictDialogProp
         <View style={styles.card}>
           <View style={styles.titleRow}>
             <Icon name="warning" size={22} color={colors.conflict} />
-            <Text style={styles.title}>Delivery changed on server</Text>
+            <Text style={styles.title}>{translate('conflict.title')}</Text>
           </View>
 
           <Text style={styles.body}>
-            {server ? server.order_number : 'This delivery'} was modified on the
-            server before your {actionLabel} ({timeAgo(action.created_at)})
-            arrived.
+            {translate('conflict.body', {
+              order: server ? server.order_number : t('common.notFound'),
+              type: actionType,
+              time: timeAgo(action.created_at, Date.now(), locale),
+            })}
             {server
-              ? `\n\nServer state now: ${server.status.toUpperCase()}${
-                  server.note ? ` — ${server.note}` : ''
-                }`
+              ? `\n\n${translate('conflict.serverState', {
+                  status: server.status.toUpperCase(),
+                })}${server.note ? ` — ${server.note}` : ''}`
               : ''}
           </Text>
 
           <View style={styles.optionBox}>
-            <Text style={styles.optionTitle}>How do you want to resolve it?</Text>
-            <Text style={styles.optionBody}>
-              Discard drops your local confirmation and keeps the server state.
-              Keep leaves it in the queue untouched for dispatch to review.
-            </Text>
+            <Text style={styles.optionTitle}>{translate('conflict.howTitle')}</Text>
+            <Text style={styles.optionBody}>{translate('conflict.howBody')}</Text>
           </View>
 
-          <Button label="Discard my update" variant="danger" onPress={onDiscard} />
           <Button
-            label="Keep for dispatch review"
+            label={translate('conflict.discard')}
+            variant="danger"
+            onPress={onDiscard}
+          />
+          <Button
+            label={translate('conflict.keep')}
             variant="secondary"
             onPress={onKeep}
           />

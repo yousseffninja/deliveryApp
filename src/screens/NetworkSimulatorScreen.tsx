@@ -12,39 +12,56 @@ import { Button } from '../components/Button';
 import { useAppStore } from '../store/useAppStore';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n/translations';
+import type { Locale } from '../i18n';
 import { NetworkProfile } from '../types';
 
-const PROFILES: { key: NetworkProfile; title: string; desc: string; icon: string }[] = [
+const PROFILES: {
+  key: NetworkProfile;
+  titleKey: TranslationKey;
+  descKey: TranslationKey;
+  icon: string;
+}[] = [
   {
     key: 'online',
-    title: 'Online',
-    desc: 'Normal latency (350-600 ms), no injected failures.',
+    titleKey: 'profile.online.title',
+    descKey: 'profile.online.desc',
     icon: 'wifi',
   },
   {
     key: 'slow',
-    title: 'Slow 3G',
-    desc: '4-8 s responses with occasional stalls that force the client timeout.',
+    titleKey: 'profile.slow.title',
+    descKey: 'profile.slow.desc',
     icon: 'speedometer-outline',
   },
   {
     key: 'flaky',
-    title: 'Flaky server',
-    desc: '~45% of requests fail with 500s - exercises auto-retry with backoff.',
+    titleKey: 'profile.flaky.title',
+    descKey: 'profile.flaky.desc',
     icon: 'pulse-outline',
   },
   {
     key: 'offline',
-    title: 'Airplane mode',
-    desc: 'Every request fails as offline; updates queue locally until you switch back.',
+    titleKey: 'profile.offline.title',
+    descKey: 'profile.offline.desc',
     icon: 'airplane',
   },
 ];
 
-const APPEARANCE_OPTIONS: { key: 'light' | 'dark' | 'system'; title: string; icon: string }[] = [
-  { key: 'light', title: 'Light', icon: 'sunny-outline' },
-  { key: 'dark', title: 'Dark', icon: 'moon-outline' },
-  { key: 'system', title: 'System', icon: 'phone-portrait-outline' },
+const APPEARANCE_OPTIONS: {
+  key: 'light' | 'dark' | 'system';
+  labelKey: TranslationKey;
+  icon: string;
+}[] = [
+  { key: 'light', labelKey: 'appearance.light', icon: 'sunny-outline' },
+  { key: 'dark', labelKey: 'appearance.dark', icon: 'moon-outline' },
+  { key: 'system', labelKey: 'appearance.system', icon: 'phone-portrait-outline' },
+];
+
+const LANGUAGES: { key: Locale; labelKey: TranslationKey }[] = [
+  { key: 'en', labelKey: 'lang.english' },
+  { key: 'ar', labelKey: 'lang.arabic' },
 ];
 
 export function NetworkSimulatorScreen() {
@@ -60,27 +77,26 @@ export function NetworkSimulatorScreen() {
   const simulateServerChange = useAppStore(s => s.simulateServerChange);
   const resetMockServer = useAppStore(s => s.resetMockServer);
 
+  const { t: translate, locale, changeLocale } = useI18n();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
+
+  const changeLanguage = (next: Locale) => changeLocale(next);
 
   const pending = Object.values(deliveries)
     .filter(d => d.status === 'pending')
     .sort((a, b) => a.id - b.id);
 
   const confirmReset = () => {
-    Alert.alert(
-      'Reset mock server?',
-      'Restores the original delivery dataset and clears the duplicate-action registry.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: () => void resetMockServer(),
-        },
-      ],
-    );
+    Alert.alert(translate('sim.resetTitle'), translate('sim.resetBody'), [
+      { text: translate('common.cancel'), style: 'cancel' },
+      {
+        text: translate('common.apply'),
+        style: 'destructive',
+        onPress: () => void resetMockServer(),
+      },
+    ]);
   };
 
   return (
@@ -92,29 +108,31 @@ export function NetworkSimulatorScreen() {
         }}
       >
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Mocked backend</Text>
-          <Text style={styles.infoBody}>
-            This build talks to a fully in-app mocked API. Use these controls to
-            reproduce the required scenarios: slow responses, failed requests,
-            connectivity loss, retry success and server-side changes. The
-            profile is persisted, so you can go offline, kill the app, reopen
-            it and watch the queue survive.
-          </Text>
+          <Text style={styles.infoTitle}>{translate('sim.infoTitle')}</Text>
+          <Text style={styles.infoBody}>{translate('sim.infoBody')}</Text>
           <Text style={styles.infoStatus}>
-            Device: {deviceConnected === false ? 'offline' : 'online'} ·
-            Simulator: {simulator.profile} · Effective:{' '}
+            {translate('sim.device', {
+              state:
+                deviceConnected === false
+                  ? translate('sim.offlineLabel')
+                  : translate('sim.onlineLabel'),
+            })}{' '}
+            · {translate('sim.profile', { profile: simulator.profile })} ·{' '}
+            {translate('sim.effective')}:{' '}
             <Text
               style={{
                 color: online ? colors.success : colors.warning,
                 fontWeight: '800',
               }}
             >
-              {online ? 'ONLINE' : 'OFFLINE'}
+              {online
+                ? translate('sim.onlineLabel').toUpperCase()
+                : translate('sim.offlineLabel').toUpperCase()}
             </Text>
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Appearance</Text>
+        <Text style={styles.sectionTitle}>{translate('sim.appearance')}</Text>
         <View style={styles.appearanceRow}>
           {APPEARANCE_OPTIONS.map(option => {
             const selected = themeMode === option.key;
@@ -140,14 +158,47 @@ export function NetworkSimulatorScreen() {
                     selected ? styles.appearanceTitleSelected : null,
                   ]}
                 >
-                  {option.title}
+                  {translate(option.labelKey)}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        <Text style={styles.sectionTitle}>Network profile</Text>
+        <Text style={styles.sectionTitle}>{translate('sim.language')}</Text>
+        <View style={styles.appearanceRow}>
+          {LANGUAGES.map(option => {
+            const selected = locale === option.key;
+            return (
+              <TouchableOpacity
+                key={option.key}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                style={[
+                  styles.appearanceCard,
+                  selected ? styles.appearanceSelected : null,
+                ]}
+                onPress={() => changeLanguage(option.key)}
+              >
+                <Icon
+                  name="language-outline"
+                  size={20}
+                  color={selected ? colors.primary : colors.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.appearanceTitle,
+                    selected ? styles.appearanceTitleSelected : null,
+                  ]}
+                >
+                  {translate(option.labelKey)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={styles.sectionTitle}>{translate('sim.networkProfile')}</Text>
         {PROFILES.map(profile => {
           const selected = simulator.profile === profile.key;
           return (
@@ -170,31 +221,25 @@ export function NetworkSimulatorScreen() {
                     selected ? styles.profileTitleSelected : null,
                   ]}
                 >
-                  {profile.title}
+                  {translate(profile.titleKey)}
                 </Text>
-                <Text style={styles.profileDesc}>{profile.desc}</Text>
+                <Text style={styles.profileDesc}>
+                  {translate(profile.descKey)}
+                </Text>
               </View>
               {selected ? (
-                <Icon
-                  name="checkmark-circle"
-                  size={20}
-                  color={colors.primary}
-                />
+                <Icon name="checkmark-circle" size={20} color={colors.primary} />
               ) : null}
             </TouchableOpacity>
           );
         })}
 
-        <Text style={styles.sectionTitle}>Conflict scenarios</Text>
-        <Text style={styles.sectionHint}>
-          "Arm conflict" makes the NEXT submit for that delivery return 409 - the
-          server applies a change just before your update lands. "Change now"
-          cancels the delivery on the server immediately.
+        <Text style={styles.sectionTitle}>
+          {translate('sim.conflictScenarios')}
         </Text>
+        <Text style={styles.sectionHint}>{translate('sim.conflictHint')}</Text>
         {pending.length === 0 ? (
-          <Text style={styles.emptyText}>
-            No pending deliveries left - reset the mock server to replay scenarios.
-          </Text>
+          <Text style={styles.emptyText}>{translate('sim.noPending')}</Text>
         ) : null}
         {pending.map(delivery => {
           const armed = simulator.armedConflictDeliveryId === delivery.id;
@@ -213,23 +258,23 @@ export function NetworkSimulatorScreen() {
               <View style={styles.serverButtons}>
                 <View style={styles.serverButton}>
                   <Button
-                    label="Arm conflict"
+                    label={translate('sim.arm')}
                     variant={armed ? 'danger' : 'secondary'}
                     onPress={() => void armConflict(armed ? null : delivery.id)}
                   />
                 </View>
                 <View style={styles.serverButton}>
                   <Button
-                    label="Change now"
+                    label={translate('sim.changeNow')}
                     variant="secondary"
                     onPress={() => {
                       Alert.alert(
-                        'Change delivery on server',
-                        `${delivery.order_number} will be cancelled on the server (version bump). The app discovers this on the next refresh or submit.`,
+                        translate('sim.changeTitle'),
+                        translate('sim.changeBody', { order: delivery.order_number }),
                         [
-                          { text: 'Cancel', style: 'cancel' },
+                          { text: translate('common.cancel'), style: 'cancel' },
                           {
-                            text: 'Apply',
+                            text: translate('common.apply'),
                             style: 'destructive',
                             onPress: () => void simulateServerChange(delivery.id),
                           },
@@ -244,7 +289,7 @@ export function NetworkSimulatorScreen() {
         })}
 
         <Button
-          label="Reset mock server data"
+          label={translate('sim.reset')}
           variant="secondary"
           onPress={confirmReset}
         />

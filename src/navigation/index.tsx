@@ -2,6 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { theme } from '../theme';
+import { useAppStore } from '../store/useAppStore';
 import { DeliveryDetailsScreen } from '../screens/DeliveryDetailsScreen';
 import { DeliveriesListScreen } from '../screens/DeliveriesListScreen';
 import { CompleteDeliveryScreen } from '../screens/CompleteDeliveryScreen';
@@ -53,6 +54,7 @@ function RouteStackNavigator() {
 const Tabs = createBottomTabNavigator<RootTabParamList>();
 
 export function RootNavigator() {
+  const queueCount = useAppStore(s => Object.keys(s.outbox).length);
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
@@ -68,7 +70,18 @@ export function RootNavigator() {
       })}
     >
       <Tabs.Screen name="Route" component={RouteStackNavigator} />
-      <Tabs.Screen name="SyncQueue" component={SyncQueueScreen} />
+      <Tabs.Screen
+        name="SyncQueue"
+        component={SyncQueueScreen}
+        options={{
+          tabBarBadge: queueCount > 0 ? queueCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: theme.colors.danger,
+            color: '#FFFFFF',
+            fontSize: 10,
+          },
+        }}
+      />
     </Tabs.Navigator>
   );
 }

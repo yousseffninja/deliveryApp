@@ -38,8 +38,8 @@ connectivity. Built as a solution to the *Mobile Technical Task — Delivery Tra
 
 Arabic RTL: ![Arabic](docs/screenshots/09-arabic-rtl.png)
 
-The full client guide with these screenshots is in
-[docs/DriverTrack-Client-Guide.pdf](docs/DriverTrack-Client-Guide.pdf).
+A formatted client guide (PDF) built from these screenshots is shared
+separately - it is not part of this repository.
 
 **Beyond the task brief:** the app also ships **dark mode** (light / dark / follow-system,
 persisted), full **Arabic localization with RTL mirroring** (switch languages from the

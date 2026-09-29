@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon foreground: white disc + brand navigation mark. Content
+     stays inside the 66dp safe zone of the 108dp viewport. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,23 A31,31 0 1,0 54,85 A31,31 0 1,0 54,23 Z" />
+    <group
+        android:translateX="43.5"
+        android:translateY="43.5">
+        <path
+            android:fillColor="#1D5DF2"
+            android:pathData="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" />
+    </group>
+</vector>

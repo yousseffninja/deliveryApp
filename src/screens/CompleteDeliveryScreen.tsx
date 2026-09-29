@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Image,
@@ -17,6 +17,7 @@ import { Button } from '../components/Button';
 import { useAppStore } from '../store/useAppStore';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n';
 import { RouteStackParamList } from '../navigation/types';
 import { formatMoney } from '../utils/format';
 
@@ -36,14 +37,19 @@ export function CompleteDeliveryScreen({ route, navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { t: translate, locale } = useI18n();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
 
+  useEffect(() => {
+    navigation.setOptions({ title: translate('complete.navTitle') });
+  }, [navigation, translate, locale]);
+
   if (!delivery) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text style={styles.muted}>Delivery not found.</Text>
+        <Text style={styles.muted}>{translate('common.notFound')}</Text>
       </View>
     );
   }
@@ -64,7 +70,7 @@ export function CompleteDeliveryScreen({ route, navigation }: Props) {
   const submit = async () => {
     const trimmed = recipientName.trim();
     if (!trimmed) {
-      setError('Recipient name is required to confirm a delivery.');
+      setError(translate('complete.recipientRequired'));
       return;
     }
     setError(null);
@@ -77,15 +83,16 @@ export function CompleteDeliveryScreen({ route, navigation }: Props) {
     });
     setSubmitting(false);
     if (!result.ok) {
-      Alert.alert('Cannot confirm delivery', result.error ?? 'Unknown error');
+      Alert.alert(
+        translate('error.cannotConfirm'),
+        result.error ? translate(result.error as never) : translate('error.unknown'),
+      );
       return;
     }
     Alert.alert(
-      'Delivery saved on this device',
-      online
-        ? 'Your confirmation is being synced now.'
-        : 'You are offline. The confirmation is safely queued and will sync automatically once you are back online.',
-      [{ text: 'OK', onPress: () => navigation.goBack() }],
+      translate('complete.savedTitle'),
+      online ? translate('complete.syncing') : translate('complete.queued'),
+      [{ text: translate('common.ok'), onPress: () => navigation.goBack() }],
     );
   };
 
@@ -107,7 +114,8 @@ export function CompleteDeliveryScreen({ route, navigation }: Props) {
         </View>
 
         <Text style={styles.label}>
-          Recipient name <Text style={styles.required}>*</Text>
+          {translate('complete.recipientName')}{' '}
+          <Text style={styles.required}>*</Text>
         </Text>
         <TextInput
           style={[styles.input, error ? styles.inputError : null]}
@@ -118,7 +126,7 @@ export function CompleteDeliveryScreen({ route, navigation }: Props) {
               setError(null);
             }
           }}
-          placeholder="Who received the package?"
+          placeholder={translate('complete.whoReceived')}
           placeholderTextColor={colors.textMuted}
         />
         {error ? (
@@ -127,19 +135,17 @@ export function CompleteDeliveryScreen({ route, navigation }: Props) {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : (
-          <Text style={styles.hint}>
-            Required by the platform for proof of delivery.
-          </Text>
+          <Text style={styles.hint}>{translate('complete.recipientHint')}</Text>
         )}
 
-        <Text style={styles.label}>Delivery note</Text>
+        <Text style={styles.label}>{translate('complete.note')}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={note}
           onChangeText={setNote}
           multiline
           maxLength={MAX_NOTE_LENGTH}
-          placeholder="Optional — e.g. left with reception, gate code used…"
+          placeholder={translate('complete.notePlaceholder')}
           placeholderTextColor={colors.textMuted}
         />
         <Text style={styles.charCount}>
@@ -147,22 +153,24 @@ export function CompleteDeliveryScreen({ route, navigation }: Props) {
         </Text>
 
         <View style={styles.proofHeader}>
-          <Text style={styles.label}>Photo proof</Text>
-          <Text style={styles.optional}>Optional</Text>
+          <Text style={styles.label}>{translate('complete.photoProof')}</Text>
+          <Text style={styles.optional}>{translate('complete.optional')}</Text>
         </View>
         {photoUri ? (
           <View style={styles.photoBlock}>
             <Image source={{ uri: photoUri }} style={styles.photo} />
             <TouchableOpacity onPress={() => setPhotoUri(null)}>
-              <Text style={styles.removePhoto}>Remove photo</Text>
+              <Text style={styles.removePhoto}>
+                {translate('complete.removePhoto')}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity style={styles.attachBox} onPress={pickPhoto}>
             <Icon name="camera-outline" size={26} color={colors.primary} />
-            <Text style={styles.attachText}>Attach photo proof</Text>
+            <Text style={styles.attachText}>{translate('complete.attach')}</Text>
             <Text style={styles.attachHint}>
-              A photo of the delivered package strongly reduces disputes.
+              {translate('complete.attachHint')}
             </Text>
           </TouchableOpacity>
         )}
@@ -170,15 +178,15 @@ export function CompleteDeliveryScreen({ route, navigation }: Props) {
 
       <View style={[styles.actionBar, { paddingBottom: insets.bottom + 12 }]}>
         <Button
-          label="Confirm Delivery"
+          label={translate('complete.confirm')}
           onPress={() => void submit()}
           loading={submitting}
           disabled={submitting}
         />
         <Text style={styles.syncHint}>
           {online
-            ? 'Saved instantly and synced to the server.'
-            : 'Offline — saved on device, synced automatically later.'}
+            ? translate('complete.hintOnline')
+            : translate('complete.hintOffline')}
         </Text>
       </View>
     </View>
@@ -253,6 +261,7 @@ const makeStyles = (c: ThemeColors) =>
       paddingVertical: 12,
       fontSize: 15,
       color: c.text,
+      textAlign: 'left',
     },
     inputError: {
       borderColor: c.danger,
@@ -280,7 +289,7 @@ const makeStyles = (c: ThemeColors) =>
     charCount: {
       fontSize: 11,
       color: c.textMuted,
-      textAlign: 'right',
+      alignSelf: 'flex-end',
       marginTop: 4,
     },
     proofHeader: {

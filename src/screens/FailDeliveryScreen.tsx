@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -15,11 +15,11 @@ import { Button } from '../components/Button';
 import { useAppStore } from '../store/useAppStore';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n/translations';
 import { RouteStackParamList } from '../navigation/types';
-import { FAILURE_REASON_LABELS } from '../utils/format';
+import { FAILURE_REASONS } from '../utils/format';
 import { FailureReason } from '../types';
-
-const REASONS = Object.entries(FAILURE_REASON_LABELS) as [FailureReason, string][];
 
 type Props = NativeStackScreenProps<RouteStackParamList, 'FailDelivery'>;
 
@@ -34,21 +34,26 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { t: translate, locale } = useI18n();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
 
+  useEffect(() => {
+    navigation.setOptions({ title: translate('fail.navTitle') });
+  }, [navigation, translate, locale]);
+
   if (!delivery) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text style={styles.muted}>Delivery not found.</Text>
+        <Text style={styles.muted}>{translate('common.notFound')}</Text>
       </View>
     );
   }
 
   const submit = async () => {
     if (!reason) {
-      setError('Select a failure reason to report this delivery.');
+      setError(translate('fail.reasonRequired'));
       return;
     }
     setError(null);
@@ -60,15 +65,16 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
     });
     setSubmitting(false);
     if (!result.ok) {
-      Alert.alert('Cannot report failure', result.error ?? 'Unknown error');
+      Alert.alert(
+        translate('error.cannotReport'),
+        result.error ? translate(result.error as never) : translate('error.unknown'),
+      );
       return;
     }
     Alert.alert(
-      'Report saved on this device',
-      online
-        ? 'Your report is being synced now.'
-        : 'You are offline. The report is safely queued and will sync automatically once you are back online.',
-      [{ text: 'OK', onPress: () => navigation.goBack() }],
+      translate('fail.savedTitle'),
+      online ? translate('fail.syncing') : translate('fail.queued'),
+      [{ text: translate('common.ok'), onPress: () => navigation.goBack() }],
     );
   };
 
@@ -89,10 +95,10 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
         </View>
 
         <Text style={styles.label}>
-          Failure reason <Text style={styles.required}>*</Text>
+          {translate('fail.reason')} <Text style={styles.required}>*</Text>
         </Text>
         <View style={styles.reasons}>
-          {REASONS.map(([value, label]) => {
+          {FAILURE_REASONS.map(value => {
             const selected = reason === value;
             return (
               <TouchableOpacity
@@ -118,7 +124,7 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
                     selected ? styles.reasonTextSelected : null,
                   ]}
                 >
-                  {label}
+                  {translate(`reason.${value}` as TranslationKey)}
                 </Text>
               </TouchableOpacity>
             );
@@ -131,30 +137,28 @@ export function FailDeliveryScreen({ route, navigation }: Props) {
           </View>
         ) : null}
 
-        <Text style={styles.label}>Note</Text>
+        <Text style={styles.label}>{translate('fail.note')}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={note}
           onChangeText={setNote}
           multiline
           maxLength={240}
-          placeholder="Optional — e.g. called twice, no answer…"
+          placeholder={translate('fail.notePlaceholder')}
           placeholderTextColor={colors.textMuted}
         />
       </ScrollView>
 
       <View style={[styles.actionBar, { paddingBottom: insets.bottom + 12 }]}>
         <Button
-          label="Report Failed Delivery"
+          label={translate('details.reportFailed')}
           variant="danger"
           onPress={() => void submit()}
           loading={submitting}
           disabled={submitting}
         />
         <Text style={styles.syncHint}>
-          {online
-            ? 'Saved instantly and synced to the server.'
-            : 'Offline — saved on device, synced automatically later.'}
+          {online ? translate('fail.hintOnline') : translate('fail.hintOffline')}
         </Text>
       </View>
     </View>
@@ -232,6 +236,7 @@ const makeStyles = (c: ThemeColors) =>
       fontSize: 14,
       fontWeight: '600',
       color: c.text,
+      flex: 1,
     },
     reasonTextSelected: {
       fontWeight: '800',
@@ -256,6 +261,7 @@ const makeStyles = (c: ThemeColors) =>
       paddingVertical: 12,
       fontSize: 15,
       color: c.text,
+      textAlign: 'left',
     },
     textArea: {
       minHeight: 88,

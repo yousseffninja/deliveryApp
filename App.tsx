@@ -14,7 +14,8 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from './src/navigation';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
-import { useAppStore } from './src/store/useAppStore';
+import { I18nProvider, applyRTLPreference } from './src/i18n';
+import { settingsRepo, useAppStore } from './src/store/useAppStore';
 
 function buildNavTheme(colors: ReturnType<typeof useTheme>['colors'], isDark: boolean) {
   const base = isDark ? DarkTheme : DefaultTheme;
@@ -65,17 +66,24 @@ function Root() {
 
 function App() {
   useEffect(() => {
-    // Hydrate from disk (cached deliveries + persisted outbox + settings),
-    // subscribe to connectivity, and flush queued actions.
-    void useAppStore.getState().bootstrap();
+    void (async () => {
+      // Apply the persisted layout direction before anything renders.
+      const settings = await settingsRepo.load();
+      applyRTLPreference(settings.locale);
+      // Hydrate from disk (cached deliveries + persisted outbox + settings),
+      // subscribe to connectivity, and flush queued actions.
+      await useAppStore.getState().bootstrap();
+    })();
   }, []);
 
   return (
-    <ThemeProvider>
-      <SafeAreaProvider>
-        <Root />
-      </SafeAreaProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <SafeAreaProvider>
+          <Root />
+        </SafeAreaProvider>
+      </ThemeProvider>
+    </I18nProvider>
   );
 }
 

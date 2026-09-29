@@ -3,6 +3,8 @@ import { DeliveryStatus } from '../types';
 import { EffectiveSyncStatus } from '../store/useAppStore';
 import { ThemeColors } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { t } from '../i18n';
+import type { TranslationKey } from '../i18n/translations';
 
 interface ChipStyle {
   bg: string;
@@ -15,37 +17,43 @@ export const deliveryStatusMeta = (
   status: DeliveryStatus,
   c: ThemeColors,
 ): { label: string; style: ChipStyle } => {
-  switch (status) {
-    case 'delivered':
-      return { label: 'Delivered', style: chip(c.successBg, c.success) };
-    case 'failed':
-      return { label: 'Failed', style: chip(c.dangerBg, c.danger) };
-    case 'cancelled':
-      return { label: 'Cancelled', style: chip(c.slateBg, c.slate) };
-    default:
-      return { label: 'Pending', style: chip(c.slateBg, c.slate) };
-  }
+  const labels: Record<DeliveryStatus, TranslationKey> = {
+    pending: 'status.pending',
+    delivered: 'status.delivered',
+    failed: 'status.failed',
+    cancelled: 'status.cancelled',
+  };
+  const style =
+    status === 'delivered'
+      ? chip(c.successBg, c.success)
+      : status === 'failed'
+        ? chip(c.dangerBg, c.danger)
+        : chip(c.slateBg, c.slate);
+  return { label: t(labels[status]), style };
 };
 
 export const syncStatusMeta = (
   syncStatus: Exclude<EffectiveSyncStatus, null>,
   c: ThemeColors,
 ): { label: string; style: ChipStyle } => {
-  switch (syncStatus) {
-    case 'waiting':
-      return {
-        label: 'Waiting to sync',
-        style: chip(c.warningBg, c.warning),
-      };
-    case 'syncing':
-      return { label: 'Syncing…', style: chip(c.infoBg, c.info) };
-    case 'failed':
-      return { label: 'Failed to sync', style: chip(c.dangerBg, c.danger) };
-    case 'conflict':
-      return { label: 'Conflict', style: chip(c.conflictBg, c.conflict) };
-    default:
-      return { label: 'Synced', style: chip(c.successBg, c.success) };
-  }
+  const labels: Record<Exclude<EffectiveSyncStatus, null>, TranslationKey> = {
+    waiting: 'sync.waiting',
+    syncing: 'sync.syncing',
+    failed: 'sync.failed',
+    conflict: 'sync.conflict',
+    synced: 'sync.synced',
+  };
+  const style =
+    syncStatus === 'waiting'
+      ? chip(c.warningBg, c.warning)
+      : syncStatus === 'syncing'
+        ? chip(c.infoBg, c.info)
+        : syncStatus === 'failed'
+          ? chip(c.dangerBg, c.danger)
+          : syncStatus === 'conflict'
+            ? chip(c.conflictBg, c.conflict)
+            : chip(c.successBg, c.success);
+  return { label: t(labels[syncStatus]), style };
 };
 
 const useStyles = () => {
@@ -100,7 +108,7 @@ export function PaymentChip({ method }: { method: 'cash' | 'card' }) {
   const cash = method === 'cash';
   return (
     <Chip
-      label={cash ? 'Cash on delivery' : 'Card / online'}
+      label={t(cash ? 'payment.cash' : 'payment.card')}
       bg={cash ? colors.primarySoft : colors.slateBg}
       fg={cash ? colors.primary : colors.slate}
     />

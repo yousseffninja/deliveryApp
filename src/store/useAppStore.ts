@@ -19,6 +19,8 @@ import {
   SyncedRecord,
 } from '../types';
 import type { ThemeModePreference } from '../theme';
+import type { Locale } from '../i18n';
+import { setI18nLocale } from '../i18n';
 import { makeUuid } from '../utils/uuid';
 
 /** Module-level repos (AsyncStorage-backed). Tests can construct their own. */
@@ -57,6 +59,7 @@ interface AppState {
   /** effective connectivity: device reachability AND simulator not forcing offline */
   online: boolean;
   themeMode: ThemeModePreference;
+  locale: Locale;
   loading: boolean;
   loadError: string | null;
   showingCached: boolean;
@@ -66,6 +69,7 @@ interface AppState {
   bootstrap: () => Promise<void>;
   refresh: (options?: { silent?: boolean }) => Promise<void>;
   setThemeMode: (mode: ThemeModePreference) => Promise<void>;
+  setLocale: (locale: Locale) => Promise<void>;
   completeDelivery: (input: CompleteDeliveryInput) => Promise<ActionResult>;
   failDelivery: (input: FailDeliveryInput) => Promise<ActionResult>;
   retryAction: (deliveryId: number) => Promise<void>;
@@ -103,6 +107,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   deviceConnected: null,
   online: false,
   themeMode: 'system',
+  locale: 'en',
   loading: false,
   loadError: null,
   showingCached: false,
@@ -142,7 +147,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
       deviceConnected,
       online,
       themeMode: settings.themeMode,
+      locale: settings.locale,
     });
+    setI18nLocale(settings.locale);
+    // Layout direction (RTL for Arabic) is applied by the App shell before it
+    // starts hydration, so the first frame is already mirrored.
 
     // On every connectivity flip, re-evaluate effective online state and flush
     // the outbox as soon as the device comes back online.
@@ -170,8 +179,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   setThemeMode: async mode => {
-    await settingsRepo.save({ themeMode: mode });
+    await settingsRepo.save({ themeMode: mode, locale: get().locale });
     set({ themeMode: mode });
+  },
+
+  setLocale: async locale => {
+    await settingsRepo.save({ themeMode: get().themeMode, locale });
+    setI18nLocale(locale);
+    set({ locale });
   },
 
   refresh: async options => {
@@ -230,16 +245,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const state = get();
     const delivery = state.deliveries[input.deliveryId];
     if (!delivery) {
-      return { ok: false, error: 'Delivery not found.' };
+      return { ok: false, error: 'error.notFound' };
     }
     if (state.outbox[input.deliveryId] !== undefined) {
-      return {
-        ok: false,
-        error: 'This delivery already has an update waiting to sync.',
-      };
+      return { ok: false, error: 'error.duplicateUpdate' };
     }
     if (delivery.status !== 'pending') {
-      return { ok: false, error: 'This delivery has already been resolved.' };
+      return { ok: false, error: 'error.alreadyResolved' };
     }
 
     const actionId = makeUuid();
@@ -286,16 +298,13 @@ export const useAppStore = create<AppState>()((set, get) => ({
     const state = get();
     const delivery = state.deliveries[input.deliveryId];
     if (!delivery) {
-      return { ok: false, error: 'Delivery not found.' };
+      return { ok: false, error: 'error.notFound' };
     }
     if (state.outbox[input.deliveryId] !== undefined) {
-      return {
-        ok: false,
-        error: 'This delivery already has an update waiting to sync.',
-      };
+      return { ok: false, error: 'error.duplicateUpdate' };
     }
     if (delivery.status !== 'pending') {
-      return { ok: false, error: 'This delivery has already been resolved.' };
+      return { ok: false, error: 'error.alreadyResolved' };
     }
 
     const actionId = makeUuid();

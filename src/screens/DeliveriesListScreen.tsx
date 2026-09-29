@@ -9,16 +9,18 @@ import { SyncBanner } from '../components/SyncBanner';
 import { computeQueueCounts, computeSyncInfo, useAppStore } from '../store/useAppStore';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n/translations';
 import { DeliveryStatusFilter, RouteStackParamList } from '../navigation/types';
 import { Delivery } from '../types';
 
 type Props = NativeStackScreenProps<RouteStackParamList, 'Deliveries'>;
 
-const FILTERS: { key: DeliveryStatusFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'delivered', label: 'Delivered' },
-  { key: 'failed', label: 'Failed' },
+const FILTERS: { key: DeliveryStatusFilter; labelKey: TranslationKey }[] = [
+  { key: 'all', labelKey: 'filter.all' },
+  { key: 'pending', labelKey: 'filter.pending' },
+  { key: 'delivered', labelKey: 'filter.delivered' },
+  { key: 'failed', labelKey: 'filter.failed' },
 ];
 
 const STATUS_ORDER: Record<string, number> = {
@@ -30,7 +32,9 @@ const STATUS_ORDER: Record<string, number> = {
 
 export function DeliveriesListScreen({ navigation }: Props) {
   const { colors } = useTheme();
+  const { t, locale } = useI18n();
   const styles = makeStyles(colors);
+
   const deliveries = useAppStore(s => s.deliveries);
   const outbox = useAppStore(s => s.outbox);
   const syncedLog = useAppStore(s => s.syncedLog);
@@ -85,8 +89,8 @@ export function DeliveriesListScreen({ navigation }: Props) {
     return (
       <View style={styles.screen}>
         <ScreenHeader
-          title="My Deliveries"
-          subtitle="Loading your route…"
+          title={t('route.title')}
+          subtitle={t('route.loadingSubtitle')}
           right={
             <HeaderIconButton
               name="settings-outline"
@@ -103,8 +107,8 @@ export function DeliveriesListScreen({ navigation }: Props) {
     return (
       <View style={styles.screen}>
         <ScreenHeader
-          title="My Deliveries"
-          subtitle="Connection problem"
+          title={t('route.title')}
+          subtitle={t('route.connectionProblem')}
           right={
             <HeaderIconButton
               name="settings-outline"
@@ -116,14 +120,11 @@ export function DeliveriesListScreen({ navigation }: Props) {
           icon="cloud-offline-outline"
           iconBg={colors.dangerBg}
           iconColor={colors.danger}
-          title="Can't load deliveries"
-          message={
-            loadError ??
-            'Something went wrong. Check your connection and try again.'
-          }
-          actionLabel="Try again"
+          title={t('route.errorTitle')}
+          message={loadError ?? t('route.errorBody')}
+          actionLabel={t('route.tryAgain')}
           onAction={() => void refresh()}
-          hint="Any delivery you confirm while offline is stored safely on this device."
+          hint={t('route.offlineHint')}
         />
       </View>
     );
@@ -132,8 +133,8 @@ export function DeliveriesListScreen({ navigation }: Props) {
   return (
     <View style={styles.screen}>
       <ScreenHeader
-        title="My Deliveries"
-        subtitle={`Today · ${counts.pending} pending stop${counts.pending === 1 ? '' : 's'}`}
+        title={t('route.title')}
+        subtitle={t('route.subtitle', { count: counts.pending })}
         right={
           <HeaderIconButton
             name="settings-outline"
@@ -150,9 +151,7 @@ export function DeliveriesListScreen({ navigation }: Props) {
       />
 
       {showingCached ? (
-        <Text style={styles.cachedNote}>
-          Showing cached data — refresh failed, retrying is safe.
-        </Text>
+        <Text style={styles.cachedNote}>{t('route.cached')}</Text>
       ) : null}
 
       <FlatList
@@ -167,17 +166,17 @@ export function DeliveriesListScreen({ navigation }: Props) {
           <View style={styles.listHeader}>
             <View style={styles.statsRow}>
               <StatCard
-                label="Pending"
+                label={t('stat.pending')}
                 value={counts.pending}
                 color={colors.primary}
               />
               <StatCard
-                label="Delivered"
+                label={t('stat.delivered')}
                 value={counts.delivered}
                 color={colors.success}
               />
               <StatCard
-                label="Failed"
+                label={t('stat.failed')}
                 value={counts.failed}
                 color={colors.danger}
               />
@@ -191,7 +190,7 @@ export function DeliveriesListScreen({ navigation }: Props) {
                     onPress={() => setFilter(f.key)}
                     style={[styles.filterChip, active && styles.filterChipActive]}
                   >
-                    {f.label} ({counts[f.key]})
+                    {t(f.labelKey)} ({counts[f.key]})
                   </Text>
                 );
               })}
@@ -203,13 +202,15 @@ export function DeliveriesListScreen({ navigation }: Props) {
             icon="cube-outline"
             iconBg={colors.primarySoft}
             iconColor={colors.primary}
-            title="No deliveries here"
+            title={t('route.emptyTitle')}
             message={
               filter === 'all'
-                ? 'New deliveries appear here. Pull down or tap refresh to check again.'
-                : `No ${filter} deliveries right now.`
+                ? t('route.emptyAll')
+                : t('route.emptyFiltered', {
+                    filter: t(`filter.${filter}` as TranslationKey),
+                  })
             }
-            actionLabel="Refresh deliveries"
+            actionLabel={t('route.refresh')}
             onAction={() => void refresh()}
           />
         }
@@ -280,6 +281,7 @@ const makeStyles = (c: ThemeColors) =>
     },
     filtersRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: spacing.sm,
     },
     filterChip: {

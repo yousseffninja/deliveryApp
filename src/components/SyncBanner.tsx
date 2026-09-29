@@ -2,6 +2,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { ThemeColors, spacing, radius } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { t } from '../i18n';
+import { useI18n } from '../i18n';
 
 interface SyncBannerProps {
   online: boolean;
@@ -15,6 +17,7 @@ interface SyncBannerProps {
  */
 export function SyncBanner({ online, queueCount, conflictCount = 0 }: SyncBannerProps) {
   const { colors } = useTheme();
+  const { t: translate } = useI18n();
   const styles = makeStyles(colors);
 
   if (online && queueCount === 0) {
@@ -44,12 +47,12 @@ export function SyncBanner({ online, queueCount, conflictCount = 0 }: SyncBanner
   if (offline) {
     message =
       queueCount > 0
-        ? `Offline mode — ${queueCount} update${queueCount === 1 ? '' : 's'} waiting to sync`
-        : 'Offline mode — new updates will be saved on this device';
+        ? translate('banner.offlineWaiting', { count: queueCount })
+        : translate('banner.offline');
   } else if (attention) {
-    message = `${conflictCount} update${conflictCount === 1 ? '' : 's'} need${conflictCount === 1 ? 's' : ''} your attention`;
+    message = translate('banner.attention', { count: conflictCount });
   } else {
-    message = `Syncing ${queueCount} update${queueCount === 1 ? '' : 's'}…`;
+    message = translate('banner.syncing', { count: queueCount });
   }
 
   return (

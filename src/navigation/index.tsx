@@ -9,9 +9,25 @@ import { CompleteDeliveryScreen } from '../screens/CompleteDeliveryScreen';
 import { FailDeliveryScreen } from '../screens/FailDeliveryScreen';
 import { NetworkSimulatorScreen } from '../screens/NetworkSimulatorScreen';
 import { SyncQueueScreen } from '../screens/SyncQueueScreen';
-import { RouteStackParamList, RootTabParamList } from './types';
+import {
+  RootStackParamList,
+  RouteStackParamList,
+  RootTabParamList,
+} from './types';
 
+/**
+ * Navigation structure:
+ *
+ * RootStack
+ * ├── Tabs                (bottom tabs: Route / Sync Queue)
+ * │   ├── RouteStack      (Deliveries -> Details -> Complete/Fail forms)
+ * │   └── SyncQueueScreen
+ * └── NetworkSimulator    (reachable from any tab and any stack screen -
+ *                          NAVIGATE actions bubble UP to the root stack)
+ */
+const RootStack = createNativeStackNavigator<RootStackParamList>();
 const RouteStack = createNativeStackNavigator<RouteStackParamList>();
+const Tabs = createBottomTabNavigator<RootTabParamList>();
 
 function RouteStackNavigator() {
   const { colors } = useTheme();
@@ -45,18 +61,11 @@ function RouteStackNavigator() {
         component={FailDeliveryScreen}
         options={{ title: 'Report Failed Delivery' }}
       />
-      <RouteStack.Screen
-        name="NetworkSimulator"
-        component={NetworkSimulatorScreen}
-        options={{ title: 'Network Simulator' }}
-      />
     </RouteStack.Navigator>
   );
 }
 
-const Tabs = createBottomTabNavigator<RootTabParamList>();
-
-export function RootNavigator() {
+function TabsNavigator() {
   const queueCount = useAppStore(s => Object.keys(s.outbox).length);
   const { colors } = useTheme();
   return (
@@ -93,5 +102,31 @@ export function RootNavigator() {
         }}
       />
     </Tabs.Navigator>
+  );
+}
+
+export function RootNavigator() {
+  const { colors } = useTheme();
+  return (
+    <RootStack.Navigator
+      screenOptions={{
+        headerShadowVisible: false,
+        headerTitleStyle: { fontWeight: '700', color: colors.text },
+        headerTintColor: colors.primary,
+        headerStyle: { backgroundColor: colors.card },
+        contentStyle: { backgroundColor: colors.bg },
+      }}
+    >
+      <RootStack.Screen
+        name="Tabs"
+        component={TabsNavigator}
+        options={{ headerShown: false }}
+      />
+      <RootStack.Screen
+        name="NetworkSimulator"
+        component={NetworkSimulatorScreen}
+        options={{ title: 'Network Simulator' }}
+      />
+    </RootStack.Navigator>
   );
 }

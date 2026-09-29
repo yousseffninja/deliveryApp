@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   Alert,
   ScrollView,
@@ -6,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Button } from '../components/Button';
@@ -81,6 +83,12 @@ export function NetworkSimulatorScreen() {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
+  const navigation =
+    useNavigation<NavigationProp<Record<string, object | undefined>>>();
+
+  useEffect(() => {
+    navigation.setOptions?.({ title: translate('sim.title') });
+  }, [navigation, translate, locale]);
 
   const changeLanguage = (next: Locale) => changeLocale(next);
 
